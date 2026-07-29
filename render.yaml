@@ -1,0 +1,127 @@
+# Render blueprint: ONE web service, ONE Postgres. Nothing else.
+#
+# The whole app -- paid MCP endpoint, ledger admin and NiceGUI dashboard -- is a
+# single ASGI application (app/main.py), because NiceGUI is FastAPI underneath.
+# No worker, no Redis, no static site, no Node build step, no npm.
+#
+# There is no background worker even though batches have to close, and that is a
+# deliberate trade rather than an omission: `python -m app.cli close_batch` is
+# the closer, it is dry-run by default, and running it from a Render cron job or
+# by hand keeps the only money-moving code path off the always-on process. See
+# DEPLOY.md.
+#
+# NOT APPLIED BY THIS REPO'S TOOLING. Deploy it yourself from the Render
+# dashboard when you are ready. Nothing in this repository runs it.
+
+services:
+  - type: web
+    name: eraya-brainwave
+    runtime: python
+    plan: starter          # free tier sleeps; a sleeping payment gateway is not one
+    region: oregon
+    branch: main
+
+    # `bash build.sh`, not `./build.sh`: the executable bit does not survive a
+    # clone from a Windows checkout and the deploy would die with
+    # "Permission denied" before running a single line.
+    buildCommand: bash build.sh
+
+    # NiceGUI needs websockets for its reactive updates and MCP streamable-HTTP
+    # needs long-lived connections. Render supports both on the standard HTTP
+    # port; there is nothing to enable. --proxy-headers is required so the app
+    # sees the real scheme and host behind Render's proxy.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+
+    # /healthz returns 503 when the mounted MCP session manager did not start.
+    # That is the one failure that otherwise looks healthy while every paid tool
+    # call 500s, so it must gate the deploy.
+    healthCheckPath: /healthz
+    autoDeploy: false
+
+    envVars:
+      # Kept in lockstep with runtime.txt. Render honours either; disagreeing
+      # values are a silent version skew.
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      # Render hands out `postgres://`; app/db.py rewrites it to `postgresql://`,
+      # which SQLAlchemy 2 requires.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eraya-brainwave-db
+          property: connectionString
+
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: STORAGE_SECRET
+        generateValue: true
+
+      # MUST match the service's public URL. Two things break silently if it is
+      # wrong: the MCP endpoint advertised to agents, and the MCP transport host
+      # allowlist -- mcp==1.28.1 enables DNS-rebinding protection by default and
+      # allows only localhost, so an unlisted host makes every MCP request 421
+      # "Invalid Host header". The host is derived from this value; extras go in
+      # MCP_ALLOWED_HOSTS (comma-separated) if you put a custom domain in front.
+      - key: PUBLIC_BASE_URL
+        value: https://eraya-brainwave.onrender.com
+
+      # CAIP-2 only. Base Sepolia here; mainnet is eip155:8453 and changes no
+      # code path. app/config.py rejects the v1 "base-sepolia" spelling.
+      - key: X402_NETWORK
+        value: eip155:84532
+      - key: FACILITATOR_URL
+        value: https://x402.org/facilitator
+
+      # Secrets: set these in the Render dashboard, never in this file.
+      - key: PAY_TO_ADDRESS
+        sync: false                    # app.main refuses to boot in production
+                                       # with the zero address -- revenue would
+                                       # be burned
+      - key: CDP_API_KEY_ID
+        sync: false
+      - key: CDP_API_KEY_SECRET
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false                    # app.main refuses to boot in production
+                                       # with this empty
+
+      - key: ADMIN_USERNAME
+        value: admin
+
+      - key: PLATFORM_TAKE_BPS
+        value: "1000"                  # 10%
+
+      # Safe default: exact and upto settle per call. Turn this on only after
+      # validating the SDK batch-settlement channel with a live facilitator.
+      - key: BATCHING_ENABLED
+        value: "false"
+      # Signed channel material is encrypted with STORAGE_SECRET in Postgres,
+      # outside the six reporting ledger tables, so a cron closer can resume it.
+      - key: CHANNEL_STORAGE_BACKEND
+        value: database
+      - key: BATCH_WINDOW_SECONDS
+        value: "300"
+      - key: BATCH_MAX_CALLS
+        value: "500"
+      - key: BATCH_MIN_GROSS_PRICE
+        value: "$0.01"                 # do not open a settlement for dust
+
+      # What ONE on-chain settlement costs at the facilitator. Every fee-load
+      # figure on the dashboard and in `app.cli simulate` derives from it, so it
+      # is configuration, not a hardcoded talking point.
+      # CDP: first 1,000 tx/month free, then $0.001 each.
+      - key: FACILITATOR_FEE_PRICE
+        value: "$0.001"
+
+      # Deliberately NOT set here: AGENT_WALLET_KEY. That is a BUYER-side key.
+      # The gateway is the seller and never needs one; a private key in a web
+      # service's environment is a private key in every log, crash dump and
+      # support session that touches it.
+
+databases:
+  - name: eraya-brainwave-db
+    plan: basic-256mb
+    region: oregon
+    postgresMajorVersion: "16"

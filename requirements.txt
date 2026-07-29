@@ -1,0 +1,57 @@
+# ERAYA x BRAINWAVE -- paid MCP gateway.
+# Every version here was checked against the wheel that is actually installed in
+# .venv (see DEPLOY.md / the spine summary). Pinned exactly: a payment gateway
+# that silently changes protocol shape on a transitive bump is not a payment
+# gateway.
+
+# --- The spine -------------------------------------------------------------
+# NiceGUI IS FastAPI underneath. That single fact is why the whole app is one
+# ASGI process: official x402 FastAPI middleware, a one-line Starlette mount for
+# the MCP app, and a pure-Python reactive dashboard. No Node, no npm, no CSS.
+nicegui==3.15.0
+
+# x402[all] pulls eth-account, eth-abi, web3, mcp, fastapi, httpx.
+# It already implements paid MCP (x402.mcp.create_payment_wrapper) -- we wrap it,
+# we do not reimplement it.
+x402[all]==2.16.0
+
+# Pinned explicitly even though x402[all] and nicegui both depend on it: the MCP
+# transport contract (streamable_http_app, _meta payment keys) is load-bearing.
+mcp==1.28.1
+
+# --- Ledger ----------------------------------------------------------------
+sqlmodel==0.0.39
+SQLAlchemy==2.0.51
+alembic==1.18.5
+sqladmin==0.29.0
+# Signed batch-settlement channel state is encrypted before it reaches Postgres.
+cryptography==49.0.0
+
+# --- Server ----------------------------------------------------------------
+uvicorn[standard]==0.51.0
+fastapi==0.140.2
+starlette==1.3.1
+jinja2==3.1.6
+
+# --- Config ----------------------------------------------------------------
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+
+# --- Paid catalogue ---------------------------------------------------------
+# Only `analyze_contract` uses this, and it is imported lazily inside the call
+# so the app boots (and every other tool sells) with the SDK absent or the key
+# unset. Pinned like everything else: a metered tool whose token accounting
+# changes under a transitive bump is a billing bug, not a dependency bump.
+anthropic==0.120.0
+
+# --- Postgres on Render (SQLite is the local fallback, no driver needed) ----
+# The marker is not decoration. psycopg2-binary 2.9.10 publishes wheels up to
+# cp313 only; on a 3.14 interpreter pip falls back to building from source,
+# needs pg_config, and `pip install -r requirements.txt` dies -- taking every
+# other package in the file down with it, because pip resolves before it
+# installs. Render runs the pinned python-3.11.9 (runtime.txt), gets the cp311
+# manylinux wheel, and is unaffected. Local dev falls back to SQLite and needs
+# no driver at all. Raise the bound when a psycopg2-binary release ships cp314
+# wheels.
+psycopg2-binary==2.9.10; python_version < "3.14"

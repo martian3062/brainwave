@@ -1,0 +1,30 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local SQLite fallback database (Postgres on Render).
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# NiceGUI's on-disk state (ui.storage.general / .user live here).
+.nicegui/
+
+# Secrets. .env.example is committed; .env never is.
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise.
+# NOTE: .vscode/ is deliberately NOT ignored -- settings.json carries the shared
+# pytest wiring and interpreter path, which contributors want.
+.idea/
+.DS_Store
+Thumbs.db

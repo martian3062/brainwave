@@ -54,7 +54,7 @@ written and reviewed, but deliberately un-run — the operator deploys them by h
 | Facilitator | `https://x402.org/facilitator` (public, testnet) · Coinbase CDP hosted (configured, not enabled) | Configured |
 | Network | `eip155:84532` (Base Sepolia) | Config default |
 | Demo video | `https://…` | Not yet recorded — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
-| Repository | `https://github.com/martian3062/eraya-x-brainwave` | Branch `brainwave` |
+| Repository | `https://github.com/martian3062/brainwave` | Branch `main` |
 
 Any table in this README that reads like a live system is aspirational until this table is
 filled in. Judges open these first; they are not filled in with a placeholder pretending to be
@@ -146,7 +146,7 @@ the SDK's. This is stated in the source, not just here.
 | **Buyer-side spend Guardian** | **BRAINWAVE** | Genuinely absent upstream — `x402/hook_policy.py` guards hook *mutations*, not spend |
 | **Receipt reconciliation** (call → session → batch → tx) | **BRAINWAVE** | `Receipt` carries `session_id`, `batch_id`, `tx_hash`, `body_hash` |
 | **Author dashboard** | **BRAINWAVE** | NiceGUI, pure Python |
-| **Simulation / conformance CLI** | **BRAINWAVE** | Planned — see [build status](#build-status--what-is-real-what-is-not) |
+| **Simulation / conformance CLI** | **BRAINWAVE** | Built — `python -m app.cli simulate` and the read-only `doctor` audit |
 
 **We built the business layer on the SDK's protocol layer.** That is true, and it is a stronger
 claim than a false invention would be — a judge who knows the SDK would catch the other one in
@@ -326,9 +326,9 @@ Both facts are modelled in the schema because getting them wrong makes reconcili
 
 ```mermaid
 flowchart LR
-    GH["GitHub<br/>branch: brainwave"] -->|manual deploy| RS
+    GH["GitHub<br/>branch: main"] -->|manual deploy| RS
     subgraph RS["Render blueprint"]
-        WEB["web service<br/>runtime: python 3.11.9<br/>build: ./build.sh<br/>start: uvicorn app.main:app<br/>health: /healthz"]
+        WEB["web service<br/>runtime: python 3.11.9<br/>build: bash build.sh<br/>start: uvicorn app.main:app<br/>health: /healthz"]
         DB[("Postgres 16<br/>eraya-brainwave-db")]
         WEB -->|DATABASE_URL| DB
     end
@@ -526,12 +526,12 @@ scratch.
 from app.guardian import Guardian
 
 guardian = Guardian(
-    session_budget  = "$5.00",             # hard cap per session
-    per_call_max    = "$0.10",             # reject expensive surprises
-    daily_budget    = "$50.00",
-    allowlist       = ["mcp://tools.eraya.dev/*"],
-    require_receipt = True,                # refuse tools that do not return one
-    escalate_above  = "$1.00",             # human confirmation required
+    session_budget="$5.00",  # hard cap per session
+    per_call_max="$0.10",  # reject expensive surprises
+    daily_budget="$50.00",
+    allowlist=["mcp://tools.eraya.dev/*"],
+    require_receipt=True,  # refuse tools that do not return one
+    escalate_above="$1.00",  # human confirmation required
 )
 ```
 
@@ -593,10 +593,10 @@ repository, and `Decimal` never escapes it.
 | Ledger admin | **SQLAdmin 0.29.0** at `/admin` | Raw editable rows for fixing a stuck batch at 2am |
 | Ledger | **Postgres 16** + **SQLModel 0.0.39** / SQLAlchemy 2.0.51 | Receipts must survive a restart. SQLite fallback so a clone runs with zero setup |
 | Migrations | **Alembic 1.18.5** | `build.sh` runs `alembic upgrade head`; applies and downgrades cleanly with zero drift |
-| Batching | The SDK's `batch-settlement` channel + our `Session`/`Batch` accounting | No Redis, no scheduler service — one process |
+| Batching | The SDK's opt-in `batch-settlement` channel + encrypted Postgres `channel_state` + our `Session`/`Batch` accounting | Exact and `upto` settle per call by default; signed channel material never enters the reporting ledger |
 | Runtime | **Python 3.11.9** (`runtime.txt`) | `StrEnum` and 3.11+ typing throughout |
 | Hosting | **Render** — one web service + one Postgres | See `render.yaml` |
-| Testing | **pytest** — 59 tests | Every SDK contradiction below is pinned by a test |
+| Testing | **pytest** — 552 tests | Payment, transport, ledger, dashboard, CLI, client, migration, and hostile-facilitator cases are pinned |
 
 ### Deliberately not used
 
@@ -621,20 +621,22 @@ brainwave/
 │   ├── __init__.py          # scope statement: what is the SDK's, what is ours
 │   ├── config.py            # every env var · CAIP-2 validation · SQLite fallback
 │   ├── money.py             # integer atomic units — the ONLY money conversion
-│   ├── models.py            # Author · Tool · Session · Call · Batch · Receipt
+│   ├── models.py            # ledger models + encrypted ChannelState storage row
+│   ├── channels.py          # durable encrypted SDK channel storage + claim recovery
 │   ├── db.py                # engine, sessions, postgres:// rewrite, SQLite pragmas
 │   ├── mcp_app.py           # FastMCP server: mount path + DNS-rebinding gotchas
 │   ├── admin.py             # SQLAdmin over the ledger, money-formatted
 │   ├── dashboard.py         # NiceGUI pages + the ERAYA palette (Python constants)
 │   ├── main.py              # THE SPINE: composition order + combined lifespan
-│   ├── catalogue.py         # ← seam: @paid() tools. Absent ⇒ free tools only
-│   ├── paywall.py           # ← seam: x402 FastAPI middleware for HTTP routes
-│   └── guardian.py          # ← seam: buyer-side spend policy
+│   ├── catalogue.py         # the live paid/free MCP catalogue
+│   ├── gateway/             # MCP transport adapter; live @paid() calls shared pay core
+│   ├── pay/                 # pricing, metering, settlement, batching and receipts
+│   └── client/              # buyer-side Guardian, signer and paid MCP client
 ├── alembic/
 │   ├── env.py               # takes the URL from app.db, so alembic.ini carries none
-│   └── versions/0001_initial_ledger.py
+│   └── versions/            # ledger, demo provenance and encrypted channel state
 ├── tests/
-│   └── test_spine.py        # 59 tests; pins every SDK contradiction found
+│   └── test_*.py            # 552 tests across the complete application
 ├── docs/
 │   ├── ARCHITECTURE.md      # ASGI composition, lifespan, request-path map
 │   ├── ECONOMICS.md         # the full model, real fee schedule, break-even
@@ -649,9 +651,8 @@ brainwave/
 └── .env.example             # every value is a default the app already uses
 ```
 
-Seams marked `←` fail **soft**: absent, the spine stands up and logs a line, serving the free
-tools and the dashboard. That is deliberate — the app must be inspectable while the rest is
-still being written.
+The optional plain-HTTP paywall remains a soft seam. It is separate from the paid MCP transport,
+which is implemented and covered by the end-to-end test suite.
 
 ---
 
@@ -667,8 +668,8 @@ still being written.
 ### 1 · Install
 
 ```bash
-git clone https://github.com/martian3062/eraya-x-brainwave.git
-cd eraya-x-brainwave/brainwave
+git clone https://github.com/martian3062/brainwave.git
+cd brainwave
 
 python -m venv .venv
 .venv/Scripts/activate          # Windows
@@ -680,7 +681,8 @@ pip install -r requirements.txt
 ### 2 · Configure — optional
 
 A fresh clone runs with **no `.env` at all**: SQLite on disk, Base Sepolia, the public x402
-facilitator, batching on. Copy the example only to change something:
+facilitator, and safe per-call settlement for `exact`/`upto`. Copy the example only to change
+something:
 
 ```bash
 cp .env.example .env
@@ -693,7 +695,8 @@ PUBLIC_BASE_URL=http://localhost:8000   # MUST match the deploy host — see the
 X402_NETWORK=eip155:84532               # CAIP-2. Mainnet is eip155:8453
 PAY_TO_ADDRESS=0x…                      # where tool revenue lands
 PLATFORM_TAKE_BPS=1000                  # 10%
-BATCHING_ENABLED=true
+BATCHING_ENABLED=false                  # opt in only for SDK batch-settlement channels
+CHANNEL_STORAGE_BACKEND=database        # encrypted with STORAGE_SECRET
 SESSION_BUDGET=$5.00                    # buyer-side Guardian
 ```
 
@@ -714,12 +717,12 @@ The MCP endpoint is **`http://localhost:8000/mcp/`** — note the trailing slash
 
 ```python
 import httpx
-from x402.mcp import create_x402_mcp_client   # the SDK's client
+from x402.mcp import create_x402_mcp_client  # the SDK's client
 
 async with httpx.AsyncClient() as http:
     async with create_x402_mcp_client(http, "http://localhost:8000/mcp/") as m:
-        print(await m.call_tool("gateway_info", {}))                    # free
-        print(await m.call_tool("run_injection_attack_sim", {...}))     # paid
+        print(await m.call_tool("gateway_info", {}))  # free
+        print(await m.call_tool("run_injection_attack_sim", {...}))  # paid
 ```
 
 Or from Claude Desktop / Cursor, via any MCP client that speaks streamable HTTP.
@@ -779,7 +782,7 @@ credit.
 
 | Component | Status | Evidence |
 |---|---|---|
-| ASGI spine: FastAPI + mounted FastMCP + SQLAdmin + NiceGUI | ✅ **Built** | `app/main.py`; 59 tests pass |
+| ASGI spine: FastAPI + mounted FastMCP + SQLAdmin + NiceGUI | ✅ **Built** | `app/main.py`; 552 tests pass |
 | Combined lifespan (the 500-on-every-call trap) | ✅ **Built & pinned** | `test_mcp_lifespan_actually_ran`, `test_mounted_lifespan_does_not_run_on_its_own` |
 | Revenue ledger schema, 6 tables, all invariants as DB constraints | ✅ **Built** | `app/models.py`; migration applies **and downgrades** with zero drift |
 | Exact integer money, no float anywhere | ✅ **Built & pinned** | `app/money.py`; `test_no_float_columns_anywhere_in_the_ledger` |
@@ -789,18 +792,19 @@ credit.
 | NiceGUI dashboard (skeleton: network, asset, settlement, fee load, endpoints) | ✅ **Built** | `test_nicegui_serves_the_dashboard_at_root` |
 | Transport precision (`_meta` vs headers) surfaced in three places | ✅ **Built & pinned** | `test_public_config_is_precise_about_the_two_transports` |
 | Render blueprint + build script | ✅ **Written**, ⛔ **not run** | `render.yaml`, `build.sh` — deployed by hand, by the operator |
-| Paid tool catalogue (`@paid()` over `create_payment_wrapper`) | 🔨 **Seam defined, not yet written** | `app/mcp_app.py::_register_catalogue` — absent ⇒ free tools only |
-| Plain-HTTP paywall (`x402.http.middleware.fastapi`) | 🔨 **Seam defined, not yet written** | `app/main.py::_install_http_paywall` |
-| Buyer-side Guardian | 🔨 **Designed, not yet written** | Policy names already in `config.py` and `Call.decline_reason` |
-| Batch close + on-chain claim/sweep | 🔨 **Modelled, not yet wired** | `Batch.claim_tx_hash` / `settle_tx_hash` exist for it |
-| Receipt issue + `/receipts/{id}/verify` | 🔨 **Modelled, not yet wired** | `Receipt` table complete incl. `body_hash` |
-| Simulation / conformance CLI | 🔨 **Planned** | |
+| Paid tool catalogue (`@paid()` over `create_payment_wrapper`) | ✅ **Built & shared with the tested core** | `app/gateway/paid.py` adapts the live catalogue onto `app/pay/decorator.py`; all seven paid tools are challenged |
+| Plain-HTTP paywall (`x402.http.middleware.fastapi`) | 🔨 **Optional seam, not yet written** | `app/main.py::_install_http_paywall`; paid MCP does not depend on it |
+| Buyer-side Guardian + paid MCP client | ✅ **Built** | `app/client/`; budgets, signer loading, receipt checks and over-capture alarms are tested |
+| Exact / `upto` settlement | ✅ **Built, not transacted live** | Safe default settles each call; payer, integer nonce, amount and hostile-facilitator mismatch cases are pinned |
+| Batch close + on-chain claim/sweep | ✅ **Wired, dry-run by default** | `app/cli/close_batch.py`; encrypted durable channel state, resumable two-step close and network confirmations; no live transaction sent |
+| Receipt issue + `/receipts/{id}/verify` | ✅ **Built** | One canonical `sha256:` body digest in live, demo and CLI paths; batch settlement re-hashes the body |
+| Simulation / conformance CLI | ✅ **Built** | `python -m app.cli simulate`; `doctor` is strictly read-only |
 | On-chain settlement on Base | ⛔ **Nothing sent** | No transaction has been made from this repository |
 | Mainnet | ⛔ **Not enabled** | `eip155:8453` is one env var and changes no code path; the app warns if mainnet is configured outside production |
 
-**Nothing in this table is marked done because it is nearly done.** The spine is real and
-tested; the payment path is scaffolded with the seams and the schema it needs, and it is not
-yet claiming to have settled anything.
+**Nothing in this table is marked done because it is nearly done.** The local payment path is
+implemented and tested, but it is not claiming to have settled anything until a real Base
+Sepolia transaction is independently verifiable.
 
 ---
 
@@ -830,7 +834,7 @@ hackathon. It did not contain a standards-compliant implementation. This is that
 ## Testing
 
 ```bash
-pytest -v                 # 59 tests
+pytest -v                 # 552 tests
 alembic upgrade head && alembic downgrade base && alembic upgrade head
 ```
 
@@ -866,10 +870,11 @@ The properties that matter, in priority order:
 
 ## Roadmap
 
-- [ ] Finish the seams: catalogue, paywall, Guardian, batch close, receipts
+- [x] Finish the paid MCP catalogue, Guardian, batch close, receipts and conformance CLI
 - [ ] First real settlement on Base Sepolia, with the tx hash published in this README
-- [ ] Simulation CLI — replay a full 402 flow offline, print the protocol trace and the realised
+- [x] Simulation CLI — replay a full 402 flow offline, print the protocol trace and the realised
       fee load
+- [ ] Optional plain-HTTP paywall for non-MCP routes
 - [ ] Mainnet on Base with a live paid tool catalogue
 - [ ] Bazaar + x402scan listings so agents discover tools without a human
       (`x402/http/middleware/_bazaar_utils.py` exists for this)
