@@ -225,7 +225,7 @@ def test_lifespan_syncs_catalogue_after_first_boot_schema_creation(client):
     assert client.get("/healthz").status_code == 200
     with DBSession(engine) as db:
         tools = db.exec(select(Tool).where(Tool.is_demo.is_(False))).all()
-    assert len(REGISTRY) == 7
+    assert len(REGISTRY) == 11
     assert {spec.name for spec in REGISTRY}.issubset({tool.name for tool in tools})
 
 

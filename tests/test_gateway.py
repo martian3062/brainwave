@@ -84,8 +84,12 @@ async def test_catalogue_registers_free_and_paid_tools(mcp):
         "run_injection_attack_sim",
         "casper_balance",
         "casper_transaction",
+        "base_balance",
+        "base_transaction",
+        "base_chain_status",
         "analyze_contract",
         "summarize_bug_report",
+        "scrape_url",
     } <= names
     assert len(paid.REGISTRY) >= 5
 
@@ -97,8 +101,10 @@ def test_live_catalogue_uses_the_shared_pay_core(mcp):
     assert {
         "run_injection_attack_sim",
         "casper_balance",
+        "base_balance",
         "analyze_contract",
         "summarize_bug_report",
+        "scrape_url",
     } <= set(registry)
 
 
@@ -115,12 +121,14 @@ async def test_paid_tools_keep_the_sdk_injected_ctx_parameter(mcp):
     """
     import inspect
 
-    from app.gateway.tools import analysis, casper, swarm
+    from app.gateway.tools import analysis, base_chain, casper, swarm, webtools
 
     for _module, attr in (
         (swarm, "run_injection_attack_sim"),
         (casper, "casper_balance"),
+        (base_chain, "base_balance"),
         (analysis, "analyze_contract"),
+        (webtools, "scrape_url"),
     ):
         # The registered function is the ledger layer; reach it through FastMCP.
         tool = mcp._tool_manager.get_tool(attr)
@@ -762,6 +770,81 @@ def test_casper_motes_are_formatted_without_a_float():
     assert _cspr(1_500_000_000) == "1.5"
     assert _cspr(1) == "0.000000001"
     assert _cspr(0) == "0"
+
+
+# ------------------------------------------------------------- base_chain --
+
+
+def test_wei_is_formatted_without_a_float():
+    from app.gateway.tools.base_chain import _wei_to_eth
+
+    assert _wei_to_eth(10**18) == "1"
+    assert _wei_to_eth(1_500_000_000_000_000_000) == "1.5"
+    assert _wei_to_eth(1) == "0.000000000000000001"
+    assert _wei_to_eth(0) == "0"
+
+
+def test_balance_of_calldata_is_correctly_encoded():
+    from app.gateway.tools.base_chain import _balance_of_calldata, _pad_address
+
+    address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    padded = _pad_address(address)
+    assert len(padded) == 64
+    assert padded.endswith("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
+    assert _balance_of_calldata(address) == "0x70a08231" + padded
+
+
+def test_usdc_transfer_logs_are_decoded_from_a_receipt():
+    from app.gateway.tools.base_chain import _TRANSFER_TOPIC, _decode_usdc_transfers
+
+    usdc = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+    from_addr, to_addr = "11" * 20, "22" * 20
+    log = {
+        "address": usdc,
+        "topics": [_TRANSFER_TOPIC, "0x" + "00" * 12 + from_addr, "0x" + "00" * 12 + to_addr],
+        "data": "0x" + format(2_500_000, "064x"),
+    }
+    assert _decode_usdc_transfers([log], usdc) == [
+        {
+            "from": "0x" + from_addr,
+            "to": "0x" + to_addr,
+            "valueAtomic": "2500000",
+            "value": "2.500000 USDC",
+        }
+    ]
+
+
+def test_usdc_transfer_logs_ignore_non_matching_contract_or_topic():
+    from app.gateway.tools.base_chain import _decode_usdc_transfers
+
+    other_contract = {"address": "0xdead", "topics": ["0xnotatransfer"], "data": "0x0"}
+    assert _decode_usdc_transfers([other_contract], "0xUSDC") == []
+    assert _decode_usdc_transfers([], "0xUSDC") == []
+
+
+@pytest.mark.anyio
+async def test_evm_rpc_reports_unconfigured_without_a_node(monkeypatch):
+    from app.gateway.tools._upstream import evm_rpc
+
+    monkeypatch.setattr(gw, "base_rpc_url", "")
+    result = await evm_rpc("eth_blockNumber")
+    assert result["ok"] is False
+    assert result["engine"] == "unconfigured"
+
+
+# --------------------------------------------------------------- webtools --
+
+
+@pytest.mark.anyio
+async def test_scrape_tool_reports_unavailable_rather_than_raising(monkeypatch):
+    """No key must mean a readable answer and no capture -- not a stack trace."""
+    from app.gateway.tools import webtools
+
+    monkeypatch.setattr(type(gw), "firecrawl_configured", property(lambda self: False))
+    out = await webtools._scrape("https://example.com")
+    assert out["ok"] is False
+    assert out["engine"] == "unavailable"
+    assert "no upstream call was made" in out["charged"]
 
 
 # ------------------------------------------------------------ requirements --

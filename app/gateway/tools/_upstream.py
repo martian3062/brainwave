@@ -31,7 +31,15 @@ from app.gateway.config import gateway_settings as gw
 
 log = logging.getLogger(__name__)
 
-__all__ = ["eraya_get", "eraya_post", "casper_rpc", "MOTES_PER_CSPR"]
+__all__ = [
+    "eraya_get",
+    "eraya_post",
+    "casper_rpc",
+    "evm_rpc",
+    "firecrawl_scrape",
+    "rpc_error",
+    "MOTES_PER_CSPR",
+]
 
 #: Casper's smallest unit. Integer division everywhere -- a balance is money and
 #: `app.money`'s rule (no floats) applies to CSPR as much as to USDC.
@@ -131,3 +139,74 @@ def rpc_error(response: dict[str, Any], fallback: str = "rpc failed") -> str:
     if isinstance(error, dict):
         return str(error.get("message") or fallback)
     return fallback
+
+
+# --------------------------------------------------------------------------
+# Base / EVM JSON-RPC
+# --------------------------------------------------------------------------
+
+
+async def evm_rpc(method: str, params: list[Any] | None = None) -> dict[str, Any]:
+    """One JSON-RPC round trip against the configured Base node.
+
+    Defaults to the public Base Sepolia RPC (`https://sepolia.base.org`) so this
+    boots and sells on a completely empty `.env`; point `BASE_RPC_URL` at a
+    dedicated provider (Quicknode, Alchemy, ...) for production rate limits.
+    Reads only -- the gateway holds no EVM signing key for these calls and never
+    submits a Base transaction from here, only from the facilitator's own
+    settlement path.
+    """
+    node = gw.base_rpc_url.strip()
+    if not node:
+        return _unconfigured("Base RPC node", "BASE_RPC_URL")
+
+    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or []}
+    try:
+        async with httpx.AsyncClient(timeout=gw.base_rpc_timeout, follow_redirects=True) as client:
+            response = await client.post(node, json=body)
+            response.raise_for_status()
+            data = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return {"error": {"message": str(exc)[:400], "method": method, "node": node}}
+
+    if not isinstance(data, dict):
+        return {"error": {"message": "node returned a non-object response", "method": method}}
+    return data
+
+
+# --------------------------------------------------------------------------
+# Firecrawl REST API
+# --------------------------------------------------------------------------
+
+
+async def firecrawl_scrape(url: str) -> dict[str, Any]:
+    """One page fetch through Firecrawl's `/v1/scrape`.
+
+    Returns Firecrawl's own response shape (`{"success": bool, "data": {...}}`
+    or `{"success": false, "error": ...}`) unmodified on success, so the caller
+    decides what to keep -- this function's only job is the network call and
+    the "not configured" fallback, same division of labour as `casper_rpc`.
+    """
+    if not gw.firecrawl_configured:
+        return _unconfigured("Firecrawl", "FIRECRAWL_API_KEY")
+
+    endpoint = f"{gw.firecrawl_api_base.rstrip('/')}/v1/scrape"
+    try:
+        async with httpx.AsyncClient(timeout=gw.firecrawl_timeout, follow_redirects=True) as client:
+            response = await client.post(
+                endpoint,
+                headers={"Authorization": f"Bearer {gw.firecrawl_api_key}"},
+                json={"url": url, "formats": ["markdown"]},
+            )
+            data = response.json() if response.content else {}
+            if response.status_code >= 400:
+                return {
+                    "ok": False,
+                    "success": False,
+                    "error": (data.get("error") if isinstance(data, dict) else None)
+                    or f"firecrawl returned {response.status_code}",
+                }
+    except (httpx.HTTPError, ValueError) as exc:
+        return {"ok": False, "success": False, "error": str(exc)[:400]}
+
+    return data if isinstance(data, dict) else {"ok": False, "success": False, "error": "non-object response"}

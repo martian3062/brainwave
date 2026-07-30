@@ -65,6 +65,22 @@ class GatewaySettings(BaseSettings):
     casper_public_key: str = ""
     casper_rpc_timeout: float = 15.0
 
+    # ------------------------------------------------------ upstream: base ---
+    #: Base/EVM JSON-RPC endpoint -- the chain this gateway actually settles on.
+    #: Defaults to the public Base Sepolia RPC so `base_balance` / `base_transaction`
+    #: / `base_chain_status` boot and sell on a completely empty `.env`; point this
+    #: at a dedicated provider (Quicknode, Alchemy, ...) for production rate limits.
+    #: Reads only -- the gateway holds no EVM signing key for these calls.
+    base_rpc_url: str = "https://sepolia.base.org"
+    base_rpc_timeout: float = 15.0
+
+    # ------------------------------------------------- upstream: firecrawl ---
+    #: Absent, `scrape_url` reports itself unavailable and captures nothing --
+    #: same contract as `analyze_contract` without ANTHROPIC_API_KEY.
+    firecrawl_api_key: str = ""
+    firecrawl_api_base: str = "https://api.firecrawl.dev"
+    firecrawl_timeout: float = 30.0
+
     # ------------------------------------------------------- upstream: LLM ---
     #: Anthropic API key for `analyze_contract`. Absent, the tool returns a
     #: structured "unavailable" result and captures nothing.
@@ -84,6 +100,8 @@ class GatewaySettings(BaseSettings):
     #: These are the defaults the catalogue seeds with; the Tool row wins after.
     price_injection_sim: str = "$0.01"
     price_casper_read: str = "$0.001"
+    price_base_read: str = "$0.001"
+    price_scrape_url: str = "$0.003"
     price_summarize_bug_report: str = "$0.001"
     #: `analyze_contract` is `upto`: this is the authorized ceiling.
     price_analyze_contract_max: str = "$0.05"
@@ -108,6 +126,14 @@ class GatewaySettings(BaseSettings):
         return parse_price(self.price_casper_read, self.decimals)
 
     @cached_property
+    def base_read_atomic(self) -> int:
+        return parse_price(self.price_base_read, self.decimals)
+
+    @cached_property
+    def scrape_url_atomic(self) -> int:
+        return parse_price(self.price_scrape_url, self.decimals)
+
+    @cached_property
     def summarize_atomic(self) -> int:
         return parse_price(self.price_summarize_bug_report, self.decimals)
 
@@ -130,6 +156,10 @@ class GatewaySettings(BaseSettings):
     @cached_property
     def llm_configured(self) -> bool:
         return bool(self.anthropic_api_key.strip())
+
+    @cached_property
+    def firecrawl_configured(self) -> bool:
+        return bool(self.firecrawl_api_key.strip())
 
 
 @lru_cache(maxsize=1)

@@ -24,7 +24,9 @@ MODULES: tuple[tuple[str, str], ...] = (
     ("free", "discovery + receipt verification (never paywalled)"),
     ("swarm", "prompt-injection and identity-spoof simulations"),
     ("casper", "Casper chain reads"),
+    ("base_chain", "Base/EVM chain reads (Quicknode-backed, public RPC fallback)"),
     ("analysis", "LLM contract review (metered) and deterministic triage"),
+    ("webtools", "Firecrawl-backed URL scraping"),
 )
 
 
