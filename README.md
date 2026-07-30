@@ -39,18 +39,19 @@ The agent never sees an API key. The author never runs a billing system.
 
 ---
 
-## ⚠️ Deployment status: NOT YET DEPLOYED
+## Deployment status: LIVE on Render (no on-chain settlement yet)
 
-**There is no live URL yet. Nothing has been deployed, no contract has been published, and no
-on-chain transaction has been sent from this repository.** `render.yaml` and `build.sh` are
-written and reviewed, but deliberately un-run — the operator deploys them by hand.
+**Deployed and independently verified**: `/healthz` reports `mcp_session_manager: started`, and
+a real `mcp.ClientSession` driven against the live endpoint lists all 16 tools. **No on-chain
+transaction has been sent from this repository yet** — the facilitator path is configured and
+exercised in tests, but no real Base Sepolia settlement has happened.
 
 | Component | Location | Status |
 |---|---|---|
-| Gateway (paid MCP endpoint) | `https://…/mcp/` | **NOT YET DEPLOYED** |
-| Author dashboard | `https://…/` | **NOT YET DEPLOYED** |
-| Ledger admin | `https://…/admin/` | **NOT YET DEPLOYED** |
-| `payTo` address | `0x…` | **NOT SET** — `PAY_TO_ADDRESS` is the zero address by default, and the app refuses to boot in production with it |
+| Gateway (paid MCP endpoint) | `https://eraya-brainwave.onrender.com/mcp/` | **LIVE** — 16 tools listed via a real MCP client |
+| Author dashboard | `https://eraya-brainwave.onrender.com/` | **LIVE** |
+| Ledger admin | `https://eraya-brainwave.onrender.com/admin/` | **LIVE** — password-protected |
+| `payTo` address | `0x29f8A51736884DfE765a8e352AE854AB02F101Ad` | **SET** — a fresh Base Sepolia address generated for this deploy; testnet only, holds no mainnet funds |
 | Facilitator | `https://x402.org/facilitator` (public, testnet) · Coinbase CDP hosted (configured, not enabled) | Configured |
 | Network | `eip155:84532` (Base Sepolia) | Config default |
 | Demo video | `https://…` | Not yet recorded — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
