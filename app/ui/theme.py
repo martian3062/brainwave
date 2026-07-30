@@ -114,6 +114,9 @@ __all__ = [
     "line_series",
     "scatter_series",
     "alpha",
+    "glass",
+    "PEACH",
+    "PEACH_SOFT",
     "table_view",
 ]
 
@@ -134,6 +137,24 @@ GRID = "#3a2130"  # hairline gridlines and axes   (1.31:1 vs BG -- recessive)
 INK = FG  # primary text     17.6:1
 INK_2 = "#b9a7b1"  # secondary text    8.4:1
 INK_MUTED = "#8f7f88"  # axis ticks, captions  5.1:1
+
+# --------------------------------------------------------------------------
+# Retro-peach glass chrome -- layered OVER the chrome above, for surfaces and
+# backgrounds only. Never used for SERIES/ORDINAL/status ink: those three keep
+# the validator report from the module docstring untouched. This section is
+# purely decorative (page background, card fills, nav), so it carries none of
+# that report's constraints.
+# --------------------------------------------------------------------------
+PEACH = "#ffb27a"  # warm mid-tone, bridges ACCENT to CREAM
+PEACH_SOFT = "#ffd9b3"  # pale peach, gradient terminus
+GLASS_BORDER = "rgba(255,243,236,0.14)"  # CREAM hairline, low alpha
+
+#: The retro-sunset backdrop: BG -> deep accent -> accent -> peach -> soft
+#: peach, the classic dark-to-warm synthwave ramp. Animated in `apply_theme`.
+RETRO_GRADIENT = (
+    f"linear-gradient(120deg, {BG} 0%, {ACCENT_DEEP} 32%, {ACCENT} 55%, "
+    f"{PEACH} 78%, {PEACH_SOFT} 100%)"
+)
 
 # --------------------------------------------------------------------------
 # Data colour. See the module docstring for the validator report.
@@ -160,6 +181,25 @@ def alpha(hex_color: str, a: float) -> str:
     h = hex_color.lstrip("#")
     r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
     return f"rgba({r},{g},{b},{a})"
+
+
+def glass(tint: str = CREAM, opacity: float = 0.08, *, blur: int = 18, glow: str = "") -> str:
+    """Frosted-glass panel: translucent tint, blurred backdrop, hairline border,
+    soft shadow -- meant to sit over `RETRO_GRADIENT`, not a flat surface.
+
+    `glow` is an optional extra colour for a soft outer glow (the retro neon
+    touch); pass a brand colour for hero surfaces, leave empty for ordinary
+    cards so the effect stays subtle rather than novelty.
+    """
+    shadow = "0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)"
+    if glow:
+        shadow = f"0 0 40px {alpha(glow, 0.18)}, {shadow}"
+    return (
+        f"background:{alpha(tint, opacity)};"
+        f"backdrop-filter:blur({blur}px);-webkit-backdrop-filter:blur({blur}px);"
+        f"border:1px solid {GLASS_BORDER};"
+        f"box-shadow:{shadow};"
+    )
 
 
 # --------------------------------------------------------------------------
@@ -236,19 +276,68 @@ NAV: tuple[tuple[str, str, str], ...] = (
 )
 
 
+_RETRO_CSS = f"""
+<style>
+@keyframes retro-shift {{
+    0%   {{ background-position: 0% 50%; }}
+    50%  {{ background-position: 100% 50%; }}
+    100% {{ background-position: 0% 50%; }}
+}}
+.retro-gradient-bg {{
+    background: linear-gradient(120deg, {BG}, {ACCENT_DEEP}, {ACCENT}, {PEACH}, {PEACH_SOFT}, {ACCENT}, {ACCENT_DEEP});
+    background-size: 400% 400%;
+    animation: retro-shift 24s ease-in-out infinite;
+}}
+</style>
+"""
+
+
 def apply_theme() -> None:
     ui.colors(primary=ACCENT, secondary=ACCENT_DEEP, accent=ACCENT, dark=BG)
+    # The only <style> tag in the project: a keyframe animation, which NiceGUI's
+    # inline .style()/.classes() API has no way to express. Still pure Python --
+    # generated from the palette constants above, not a separate stylesheet file.
+    ui.add_head_html(_RETRO_CSS)
     ui.query("body").style(f"background-color:{BG}; color:{INK}")
     # Quasar paints its own surface behind the page; match it or cards float on grey.
     ui.query(".nicegui-content").style("padding:0")
 
 
-def _nav_bar(active: str) -> None:
+def _aside(active: str):
+    """The nav 'aside' -- a transparent glass drawer over the retro gradient.
+
+    Returns the drawer so `_nav_bar` can wire a toggle button to it.
+    """
+    drawer = ui.left_drawer(value=True).classes("gap-1 p-3").style(glass(CREAM, 0.05, blur=22))
+    with drawer:
+        with ui.row().classes("items-center gap-2 px-1 pb-3"):
+            ui.icon("bolt").style(f"color:{ACCENT}; font-size:1.3rem")
+            ui.label("ERAYA").style(f"color:{CREAM}; font-weight:700; letter-spacing:0.02em")
+        for path, label, icon in NAV:
+            on = path == active
+            with (
+                ui.link(target=path)
+                .classes("no-underline w-full px-3 py-2 rounded-lg flex items-center gap-3")
+                .style(
+                    f"background:{alpha(ACCENT_DEEP, 0.22) if on else 'transparent'};"
+                    f"color:{CREAM if on else INK_2};"
+                    + (f"box-shadow:0 0 20px {alpha(ACCENT, 0.15)};" if on else "")
+                )
+            ):
+                ui.icon(icon).style("font-size:1.1rem")
+                ui.label(label).style("font-size:0.85rem; font-weight:500")
+    return drawer
+
+
+def _nav_bar(drawer) -> None:
     with (
         ui.row()
-        .classes("w-full items-center gap-6 px-6 py-4")
-        .style(f"background:{SURFACE}; border-bottom:1px solid {GRID}")
+        .classes("w-full items-center gap-4 px-6 py-4 sticky top-0 z-10")
+        .style(glass(CREAM, 0.06, blur=20, glow=ACCENT))
     ):
+        ui.button(icon="menu", on_click=drawer.toggle).props("flat round dense").style(
+            f"color:{CREAM}"
+        )
         with ui.column().classes("gap-0"):
             ui.label("ERAYA x BRAINWAVE").style(
                 f"color:{CREAM}; font-size:1rem; font-weight:700; letter-spacing:-0.01em"
@@ -257,20 +346,6 @@ def _nav_bar(active: str) -> None:
                 f"color:{ACCENT}; font-size:0.72rem"
             )
         ui.space()
-        with ui.row().classes("items-center gap-1"):
-            for path, label, icon in NAV:
-                on = path == active
-                with (
-                    ui.link(target=path)
-                    .classes("no-underline px-3 py-2 rounded-md flex items-center gap-2")
-                    .style(
-                        f"background:{alpha(ACCENT_DEEP, 0.18) if on else 'transparent'};"
-                        f"color:{CREAM if on else INK_2}"
-                    )
-                ):
-                    ui.icon(icon).style("font-size:1rem")
-                    ui.label(label).style("font-size:0.85rem; font-weight:500")
-        ui.separator().props("vertical").style(f"background:{GRID}")
         with ui.row().classes("items-center gap-3"):
             _pill(settings.x402_network, "accent" if settings.is_mainnet else "default")
             _pill("batched" if settings.batching_enabled else "per-call settlement")
@@ -285,10 +360,11 @@ def _pill(text: str, tone: str = "default") -> None:
 
 @contextmanager
 def page_shell(active: str, title: str, subtitle: str = "") -> Iterator[None]:
-    """Nav bar, page heading, and a max-width body column. Used by every page."""
+    """Aside, nav bar, page heading, and a max-width body column. Used by every page."""
     apply_theme()
-    with ui.column().classes("w-full min-h-screen gap-0").style(f"background:{BG}"):
-        _nav_bar(active)
+    drawer = _aside(active)
+    with ui.column().classes("w-full min-h-screen gap-0 retro-gradient-bg"):
+        _nav_bar(drawer)
         with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-6 gap-5"):
             with ui.column().classes("gap-1"):
                 ui.label(title).style(
@@ -322,11 +398,7 @@ def _footer() -> None:
 
 @contextmanager
 def card(title: str = "", subtitle: str = "") -> Iterator[None]:
-    with (
-        ui.column()
-        .classes("w-full gap-3 p-5 rounded-xl")
-        .style(f"background:{SURFACE}; border:1px solid {GRID}")
-    ):
+    with ui.column().classes("w-full gap-3 p-5 rounded-xl").style(glass(CREAM, 0.05)):
         if title:
             with ui.column().classes("gap-0"):
                 ui.label(title).style(f"color:{CREAM}; font-size:1rem; font-weight:600")
@@ -358,7 +430,7 @@ def stat(label: str, value: str, sub: str = "", tone: str = "default", icon: str
     with (
         ui.column()
         .classes("gap-1 p-4 rounded-xl flex-1")
-        .style(f"background:{SURFACE}; border:1px solid {GRID}; min-width:180px")
+        .style(glass(_TONES.get(tone, CREAM), 0.06, blur=14) + "min-width:180px")
     ):
         ui.label(label).classes("uppercase").style(
             f"color:{INK_MUTED}; font-size:0.66rem; letter-spacing:0.12em"
@@ -394,7 +466,10 @@ def note(text: str, tone: str = "default", icon: str = "info") -> None:
     with (
         ui.row()
         .classes("items-start gap-2 p-3 rounded-lg w-full")
-        .style(f"background:{alpha(colour, 0.08)}; border:1px solid {alpha(colour, 0.25)}")
+        .style(
+            f"background:{alpha(colour, 0.10)}; border:1px solid {alpha(colour, 0.25)};"
+            "backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);"
+        )
     ):
         ui.icon(icon).style(f"color:{colour}; font-size:1rem; margin-top:1px")
         ui.label(text).style(f"color:{INK}; font-size:0.8rem; max-width:90ch")
