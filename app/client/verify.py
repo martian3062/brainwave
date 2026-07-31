@@ -90,23 +90,20 @@ ATTESTATION_PREFIX = "x402-brainwave-receipt-v1:"
 # --------------------------------------------------------------------------
 
 
-def _strip_nulls(value: Any) -> Any:
-    if isinstance(value, Mapping):
-        return {k: _strip_nulls(v) for k, v in value.items() if v is not None}
-    if isinstance(value, (list, tuple)):
-        return [_strip_nulls(v) for v in value]
-    return value
-
-
 def canonical_json(body: Mapping[str, Any]) -> str:
     """The one canonical serialization of a receipt body.
 
-    Sorted keys, no separators whitespace, non-ASCII preserved, nulls dropped.
-    Both the digest and the attestation are computed over exactly this string;
-    if the gateway and the verifier ever disagree here, every receipt fails.
+    Sorted keys, no separators whitespace, non-ASCII preserved. MUST match
+    `app.pay.receipts.canonical_json` byte for byte -- this docstring used to
+    say so and then drifted anyway: this copy dropped `None` values (`batchId`
+    is `None` on every per-call receipt) and the server's does not, so every
+    real receipt failed local verification with "the body has been altered"
+    even though nothing had. Found by running one real settlement against the
+    live deployed gateway; `app.pay.receipts` is the side that actually writes
+    the stored hash, so it is the side this one must match, not the reverse.
     """
     return json.dumps(
-        _strip_nulls(body),
+        body,
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
@@ -115,8 +112,10 @@ def canonical_json(body: Mapping[str, Any]) -> str:
 
 
 def body_digest(body: Mapping[str, Any]) -> str:
-    """sha256 hex of the canonical body. 64 chars -- fits `Receipt.body_hash`."""
-    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
+    """`sha256:`-prefixed hex of the canonical body -- matches
+    `app.pay.receipts.body_digest` exactly. The stored/received `bodyHash`
+    always carries that prefix; a bare hex digest can never match it."""
+    return "sha256:" + hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
 def verify_body_hash(body: Mapping[str, Any], expected: str) -> bool:

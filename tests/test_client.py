@@ -789,11 +789,44 @@ def test_the_audit_wrapper_does_not_silently_acquire_rpc_powers():
 # ==========================================================================
 
 
-def test_the_canonical_form_is_stable_under_key_order_and_absent_optionals():
+def test_the_canonical_form_is_stable_under_key_order_but_keeps_explicit_nulls():
+    """Key order must not affect the digest. An explicit `None` (e.g. `batchId`
+    on every per-call receipt) must NOT be dropped, though: this test used to
+    assert the opposite, which is exactly the drift that made every real
+    receipt fail local verification -- `app.pay.receipts.canonical_json`
+    (which actually computes the stored `bodyHash`) never drops nulls, so a
+    verifier that does can never agree with it. Found by running one real
+    settlement against the live deployed gateway.
+    """
     a = {"b": 2, "a": 1, "c": None}
-    b = {"a": 1, "b": 2}
-    assert canonical_json(a) == canonical_json(b) == '{"a":1,"b":2}'
+    b = {"c": None, "a": 1, "b": 2}
+    assert canonical_json(a) == canonical_json(b) == '{"a":1,"b":2,"c":null}'
     assert body_digest(a) == body_digest(b)
+    assert body_digest(a).startswith("sha256:")
+
+
+def test_the_verifiers_canonical_form_agrees_with_the_seller_that_writes_the_hash():
+    """Direct cross-check between the two independent implementations.
+
+    `app.pay.receipts` computes and stores the real `bodyHash` on every issued
+    receipt; `app.client.verify` recomputes it to check one. They are two
+    separate modules with two separate copies of "the same" canonicalization,
+    and they silently drifted -- this exact test would have caught it. Without
+    it, the only way to notice is to run a real settlement against a live
+    gateway and watch local verification fail on an untampered receipt, which
+    is how this was actually found.
+    """
+    from app.pay import receipts as seller
+
+    body = {
+        "receiptId": "rcpt_cross_check",
+        "batchId": None,  # present and null on every per-call (unbatched) receipt
+        "capturedAtomic": "1000",
+        "authorizedAtomic": "1000",
+        "meter": None,
+    }
+    assert canonical_json(body) == seller.canonical_json(body)
+    assert body_digest(body) == seller.body_digest(body)
 
 
 def test_a_tampered_receipt_fails_the_digest():
