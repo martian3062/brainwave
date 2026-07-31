@@ -288,6 +288,41 @@ _RETRO_CSS = f"""
     background-size: 400% 400%;
     animation: retro-shift 24s ease-in-out infinite;
 }}
+@keyframes boot-fade {{
+    0%, 82% {{ opacity: 1; visibility: visible; }}
+    100%    {{ opacity: 0; visibility: hidden; }}
+}}
+@keyframes boot-line-in {{
+    from {{ opacity: 0; transform: translateY(3px); }}
+    to   {{ opacity: 1; transform: translateY(0); }}
+}}
+@keyframes boot-cursor-blink {{
+    0%, 100% {{ opacity: 1; }}
+    50%      {{ opacity: 0; }}
+}}
+.boot-overlay {{
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem 4rem;
+    background: {BG};
+    pointer-events: none;
+    animation: boot-fade 3.4s ease-in forwards;
+}}
+.boot-line {{
+    opacity: 0;
+    font-family: monospace;
+    font-size: 0.95rem;
+    animation: boot-line-in 0.35s ease-out forwards;
+}}
+.boot-cursor {{
+    font-family: monospace;
+    font-size: 0.95rem;
+    animation: boot-cursor-blink 1s step-start infinite;
+}}
 </style>
 """
 
@@ -301,6 +336,33 @@ def apply_theme() -> None:
     ui.query("body").style(f"background-color:{BG}; color:{INK}")
     # Quasar paints its own surface behind the page; match it or cards float on grey.
     ui.query(".nicegui-content").style("padding:0")
+
+
+def _boot_overlay() -> None:
+    """A retro terminal boot sequence, played once on landing at `/`.
+
+    Pure CSS -- there is no JavaScript anywhere in this project. The overlay
+    fades itself out via `boot-fade` and carries `pointer-events:none` for its
+    entire life, so a click during the sequence still reaches the dashboard
+    underneath rather than waiting on the animation.
+    """
+    lines = (
+        ("$ eraya-brainwave --boot", ACCENT),
+        (f"> x402 v2 - {settings.x402_network} - {settings.x402_asset_symbol}", INK_2),
+        (f"> facilitator: {settings.facilitator_label} ... ok", INK_2),
+        ("> ledger: connected", INK_2),
+        ("> mcp session manager: started", INK_2),
+    )
+    with ui.column().classes("boot-overlay gap-1"):
+        for i, (line, colour) in enumerate(lines):
+            ui.label(line).classes("boot-line").style(
+                f"color:{colour}; animation-delay:{0.15 + i * 0.22}s"
+            )
+        with ui.row().classes("items-baseline gap-0"):
+            ui.label("> loading dashboard").classes("boot-line").style(
+                f"color:{PEACH}; animation-delay:{0.15 + len(lines) * 0.22}s"
+            )
+            ui.label("_").classes("boot-cursor").style(f"color:{PEACH}")
 
 
 def _aside(active: str):
@@ -362,6 +424,10 @@ def _pill(text: str, tone: str = "default") -> None:
 def page_shell(active: str, title: str, subtitle: str = "") -> Iterator[None]:
     """Aside, nav bar, page heading, and a max-width body column. Used by every page."""
     apply_theme()
+    if active == "/":
+        # Only on the landing page -- replaying a boot animation on every nav
+        # click between Tools/Receipts/Economics would be noise, not delight.
+        _boot_overlay()
     drawer = _aside(active)
     with ui.column().classes("w-full min-h-screen gap-0 retro-gradient-bg"):
         _nav_bar(drawer)
