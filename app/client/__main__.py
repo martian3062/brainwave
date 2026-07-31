@@ -402,7 +402,7 @@ def _add_common(parser: argparse.ArgumentParser, *, needs_url: bool = True) -> N
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.client",
-        description="ERAYA x BRAINWAVE -- the buyer side: a paying MCP client with a spend policy.",
+        description="TRAPPIST x BRAINWAVE -- the buyer side: a paying MCP client with a spend policy.",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)

@@ -1,4 +1,4 @@
-# ERAYA × BRAINWAVE
+# TRAPPIST × BRAINWAVE
 
 ### Paid MCP — every agent tool call, metered and settled on-chain
 
@@ -23,7 +23,7 @@ shipping. Their authors have exactly one monetization path: none. No metering, n
 no way to charge for the expensive call — so the good tools stay private and the public ones
 stay trivial.
 
-ERAYA × BRAINWAVE is the missing meter. Register a tool, set a price, and every invocation
+TRAPPIST × BRAINWAVE is the missing meter. Register a tool, set a price, and every invocation
 becomes an x402 payment — **Challenge → Sign → Retry → Settle**, USDC on Base — with a
 reconcilable receipt returned inside the tool response.
 
@@ -163,7 +163,7 @@ thirty seconds.
 sequenceDiagram
     autonumber
     participant A as Agent<br/>(Claude · Cursor · LangChain)
-    participant G as ERAYA Gateway<br/>FastMCP @ /mcp/
+    participant G as TRAPPIST Gateway<br/>FastMCP @ /mcp/
     participant F as Facilitator
     participant B as Base · USDC
 
@@ -629,7 +629,7 @@ brainwave/
 │   ├── db.py                # engine, sessions, postgres:// rewrite, SQLite pragmas
 │   ├── mcp_app.py           # FastMCP server: mount path + DNS-rebinding gotchas
 │   ├── admin.py             # SQLAdmin over the ledger, money-formatted
-│   ├── dashboard.py         # NiceGUI pages + the ERAYA palette (Python constants)
+│   ├── dashboard.py         # NiceGUI pages + the brand palette (Python constants)
 │   ├── main.py              # THE SPINE: composition order + combined lifespan
 │   ├── catalogue.py         # the live paid/free MCP catalogue
 │   ├── gateway/             # MCP transport adapter; live @paid() calls shared pay core
@@ -813,8 +813,9 @@ has held itself to throughout.
 
 ## Prior work disclosure
 
-*The track requires an MVP built during the hackathon. This project carries the ERAYA name, so
-the boundary needs to be explicit rather than buried.*
+*The track requires an MVP built during the hackathon. This project reuses real code and
+patterns from the author's prior ERAYA work, so the boundary needs to be explicit rather than
+buried.*
 
 **ERAYA** is the author's existing agent-swarm framework (Microsoft Build AI Hackathon 2026,
 Casper testnet). It contained an early, **non-standard** HTTP-402 payment experiment:
@@ -911,7 +912,7 @@ MIT
 
 <div align="center">
 
-**ERAYA × BRAINWAVE**
+**TRAPPIST × BRAINWAVE**
 *The Model Context Protocol won the tool layer. This is its payment layer.*
 
 </div>

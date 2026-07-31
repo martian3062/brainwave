@@ -379,7 +379,7 @@ def _header(
     sym = settings.x402_asset_symbol
 
     out.title(
-        "ERAYA x BRAINWAVE - x402 payment flow simulator",
+        "TRAPPIST x BRAINWAVE - x402 payment flow simulator",
         "Offline. No network, no funds, no chain. The cryptography is real.",
     )
     out.section("configuration")

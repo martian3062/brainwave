@@ -104,7 +104,7 @@ def run(args: argparse.Namespace, out: Printer) -> int:
     report = Report()
 
     out.title(
-        "ERAYA x BRAINWAVE - doctor",
+        "TRAPPIST x BRAINWAVE - doctor",
         "x402 conformance and ledger integrity. Offline; reads only.",
     )
 

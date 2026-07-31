@@ -243,7 +243,7 @@ def run(args: argparse.Namespace, out: Printer) -> int:
             return 0
 
     out.title(
-        "ERAYA x BRAINWAVE - seed demo ledger",
+        "TRAPPIST x BRAINWAVE - seed demo ledger",
         f"deterministic (seed={args.seed}); every row carries is_demo=True",
     )
     out.banner(BANNER)

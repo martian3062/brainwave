@@ -55,7 +55,7 @@ from app.models import (
     Tool,
 )
 
-log = logging.getLogger("eraya.ui.queries")
+log = logging.getLogger("brainwave.ui.queries")
 
 #: A call has a real, known capture amount from EXECUTED onwards. CHALLENGED (a
 #: 402 was issued, nothing signed) and VERIFIED (signed, not yet run) have not

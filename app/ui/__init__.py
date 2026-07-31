@@ -40,7 +40,7 @@ from nicegui import ui
 
 from app.ui.pages import economics, overview, receipts, tools
 
-log = logging.getLogger("eraya.ui")
+log = logging.getLogger("brainwave.ui")
 
 #: path -> (page module render function, browser tab title)
 ROUTES = (
@@ -68,6 +68,6 @@ def install(app=None) -> None:
 def _register(path: str, render, title: str) -> None:
     # A default argument, not a closure over the loop variable -- late binding
     # would otherwise give every route the last page's render function.
-    @ui.page(path, title=f"{title} - ERAYA x BRAINWAVE")
+    @ui.page(path, title=f"{title} - TRAPPIST x BRAINWAVE")
     def _page(_render=render) -> None:
         _render()

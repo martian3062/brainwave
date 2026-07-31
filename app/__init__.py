@@ -1,4 +1,4 @@
-"""ERAYA x BRAINWAVE -- paid MCP.
+"""TRAPPIST x BRAINWAVE -- paid MCP.
 
 MCP won the tool layer. It has no payment layer. This is that layer: every agent
 tool call metered and settled with real x402 on Base.

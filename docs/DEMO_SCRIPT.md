@@ -98,10 +98,10 @@ Timings are cumulative. **Narration** is what is spoken; **screen** is what is c
 
 ### Shot 1 · 0:00–0:12 · The problem
 
-**Screen.** Cold open on a title card, 2 seconds, on the ERAYA background `#1d0718`:
+**Screen.** Cold open on a title card, 2 seconds, on the brand background `#1d0718`:
 
 ```
-ERAYA × BRAINWAVE
+TRAPPIST × BRAINWAVE
 MCP won the tool layer. This is its payment layer.
 ```
 
@@ -314,7 +314,7 @@ Then briefly a terminal running the counterfactual SQL from
 **Screen.** Title card on `#1d0718`:
 
 ```
-ERAYA × BRAINWAVE
+TRAPPIST × BRAINWAVE
 Paid MCP · x402 on Base
 
 github.com/martian3062/brainwave
@@ -378,7 +378,7 @@ Judges test the links.
 | Cursor | Highlight enabled; keystroke overlay **off** — it is noise |
 | Zoom | Editor and JSON at ~150%. Assume a small screen |
 
-**Palette for title cards** — the ERAYA values, so the video matches the product:
+**Palette for title cards** — the brand values, so the video matches the product:
 
 ```
 background   #1d0718

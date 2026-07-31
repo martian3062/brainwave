@@ -86,7 +86,7 @@ def resource_info(tool_name: str, description: str, tags: list[str] | None = Non
         url=resource_url(tool_name),
         description=description[:512],
         mime_type="application/json",
-        service_name="ERAYA x BRAINWAVE"[:32],
+        service_name="TRAPPIST x BRAINWAVE"[:32],
         tags=(tags or [])[:5],
     )
 

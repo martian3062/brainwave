@@ -18,7 +18,7 @@ steps that clear every check, rather than by picking something that looked nice.
 
 Categorical slots (identity: which series), assigned in FIXED order, never cycled:
 
-    slot 1  #e6416f   the ERAYA deep accent -- kept, it passes on its own merits
+    slot 1  #e6416f   the brand deep accent -- kept, it passes on its own merits
     slot 2  #2299ee
     slot 3  #c08a1e
 
@@ -121,7 +121,7 @@ __all__ = [
 ]
 
 # --------------------------------------------------------------------------
-# Brand chrome -- the ERAYA values, verbatim.
+# Brand chrome, verbatim.
 # --------------------------------------------------------------------------
 BG = "#1d0718"  # page surface
 FG = "#fbf4f2"  # primary ink
@@ -347,7 +347,7 @@ def _boot_overlay() -> None:
     underneath rather than waiting on the animation.
     """
     lines = (
-        ("$ eraya-brainwave --boot", ACCENT),
+        ("$ trappist-brainwave --boot", ACCENT),
         (f"> x402 v2 - {settings.x402_network} - {settings.x402_asset_symbol}", INK_2),
         (f"> facilitator: {settings.facilitator_label} ... ok", INK_2),
         ("> ledger: connected", INK_2),
@@ -374,7 +374,7 @@ def _aside(active: str):
     with drawer:
         with ui.row().classes("items-center gap-2 px-1 pb-3"):
             ui.icon("bolt").style(f"color:{ACCENT}; font-size:1.3rem")
-            ui.label("ERAYA").style(f"color:{CREAM}; font-weight:700; letter-spacing:0.02em")
+            ui.label("TRAPPIST").style(f"color:{CREAM}; font-weight:700; letter-spacing:0.02em")
         for path, label, icon in NAV:
             on = path == active
             with (
@@ -401,7 +401,7 @@ def _nav_bar(drawer) -> None:
             f"color:{CREAM}"
         )
         with ui.column().classes("gap-0"):
-            ui.label("ERAYA x BRAINWAVE").style(
+            ui.label("TRAPPIST x BRAINWAVE").style(
                 f"color:{CREAM}; font-size:1rem; font-weight:700; letter-spacing:-0.01em"
             )
             ui.label("MCP won the tool layer. This is its payment layer.").style(

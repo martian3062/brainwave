@@ -141,7 +141,7 @@ def run(args: argparse.Namespace, out: Printer) -> int:
     live = bool(args.live)
 
     out.title(
-        "ERAYA x BRAINWAVE - close batch",
+        "TRAPPIST x BRAINWAVE - close batch",
         "LIVE SETTLEMENT" if live else "DRY RUN -- nothing is sent, nothing is written",
     )
 

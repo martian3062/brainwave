@@ -1,4 +1,4 @@
-"""Configuration for ERAYA x BRAINWAVE.
+"""Configuration for TRAPPIST x BRAINWAVE.
 
 Every knob is an environment variable with a working local default, so a fresh
 clone runs with `uvicorn app.main:app` and no `.env` at all: SQLite on disk,
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     )
 
     # ---------------------------------------------------------------- app ---
-    app_name: str = "ERAYA x BRAINWAVE"
+    app_name: str = "TRAPPIST x BRAINWAVE"
     app_env: Literal["local", "staging", "production"] = "local"
     debug: bool = False
     log_level: str = "INFO"
@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     allowlist: str = "mcp://*"
 
     # -------------------------------------------------------------- mcp -----
-    mcp_server_name: str = "eraya-brainwave"
+    mcp_server_name: str = "trappist-brainwave"
     #: Where the MCP app is mounted in the parent FastAPI app.
     mcp_mount_path: str = "/mcp"
     #: Stateless streamable HTTP: no server-side session affinity, so a single

@@ -1,6 +1,6 @@
 # Architecture
 
-How ERAYA × BRAINWAVE is composed, why the composition order is not arbitrary, and the four
+How TRAPPIST × BRAINWAVE is composed, why the composition order is not arbitrary, and the four
 places where the installed SDKs disagree with their own documentation.
 
 Everything in this document was established by **running the installed wheels** —
@@ -92,7 +92,7 @@ half-works.
 ### 3. A real frontend in pure Python
 
 Reactive components, tables and built-in ECharts, with **no HTML, CSS, JS, Node or npm anywhere
-in this repository**. The ERAYA palette lives as Python string constants in `app/dashboard.py`
+in this repository**. The brand palette lives as Python string constants in `app/dashboard.py`
 and is applied through `ui.colors()` and inline styles, because NiceGUI is styled in Python.
 
 ```python

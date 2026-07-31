@@ -89,7 +89,7 @@ def get_gateway_mcp() -> Any:
     return get_mcp()
 
 
-def build_standalone_mcp(name: str = "eraya-brainwave-gateway") -> Any:
+def build_standalone_mcp(name: str = "trappist-brainwave-gateway") -> Any:
     """A fresh FastMCP carrying only this gateway's tools.
 
     For tests and for running the catalogue over stdio against a desktop MCP

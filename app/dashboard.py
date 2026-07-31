@@ -23,9 +23,9 @@ from nicegui import ui
 from app.config import settings
 from app.money import fee_load_bps, format_atomic
 
-log = logging.getLogger("eraya.dashboard")
+log = logging.getLogger("brainwave.dashboard")
 
-# ERAYA palette. NiceGUI is styled in Python, so these are values passed to
+# Brand palette. NiceGUI is styled in Python, so these are values passed to
 # ui.colors() and inline styles -- there is no stylesheet in this project.
 BG = "#1d0718"
 FG = "#fbf4f2"
@@ -71,7 +71,7 @@ def render_dashboard() -> None:
     batched_bps = fee_load_bps(fee, demo_price * 100)
 
     with ui.column().classes("w-full max-w-6xl mx-auto p-8 gap-6"):
-        ui.label("ERAYA x BRAINWAVE").style(
+        ui.label("TRAPPIST x BRAINWAVE").style(
             f"color:{CREAM}; font-size:2.1rem; font-weight:700; letter-spacing:-0.02em"
         )
         ui.label("MCP won the tool layer. This is its payment layer.").style(

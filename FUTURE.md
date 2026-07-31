@@ -1,4 +1,4 @@
-# FUTURE — ERAYA × BRAINWAVE
+# FUTURE — TRAPPIST × BRAINWAVE
 
 > Working notes: where this stands, what is genuinely blocking, and what gets built next.
 > Written 29 July 2026. Keep it honest — this file is for us, not for judges.

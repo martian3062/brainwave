@@ -1,4 +1,4 @@
-# Deploying ERAYA × BRAINWAVE to Render
+# Deploying TRAPPIST × BRAINWAVE to Render
 
 One web service. One Postgres database. Nothing else.
 

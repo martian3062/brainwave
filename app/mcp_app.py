@@ -80,7 +80,7 @@ def build_mcp() -> FastMCP:
     mcp = FastMCP(
         name=settings.mcp_server_name,
         instructions=(
-            "ERAYA x BRAINWAVE -- paid MCP tools settled with x402 on Base. "
+            "TRAPPIST x BRAINWAVE -- paid MCP tools settled with x402 on Base. "
             "Tools return HTTP-402-shaped payment requirements in their result "
             "until a signed authorization is supplied in the MCP _meta key "
             "'x402/payment'. Payment does NOT travel in an X-PAYMENT header over "

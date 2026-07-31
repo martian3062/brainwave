@@ -1,4 +1,4 @@
-# ERAYA x BRAINWAVE -- paid MCP gateway.
+# TRAPPIST x BRAINWAVE -- paid MCP gateway.
 # Every version here was checked against the wheel that is actually installed in
 # .venv (see DEPLOY.md / the spine summary). Pinned exactly: a payment gateway
 # that silently changes protocol shape on a transitive bump is not a payment

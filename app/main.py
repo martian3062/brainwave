@@ -87,7 +87,7 @@ from app.db import DATABASE_URL, create_all, describe
 from app.mcp_app import get_mcp
 
 logging.basicConfig(level=getattr(logging, settings.log_level, logging.INFO))
-log = logging.getLogger("eraya.spine")
+log = logging.getLogger("brainwave.spine")
 
 # --------------------------------------------------------------------------
 # 0. Singletons. `streamable_http_app()` lazily builds the session manager on

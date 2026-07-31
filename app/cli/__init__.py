@@ -1,4 +1,4 @@
-"""The ERAYA x BRAINWAVE command line.
+"""The TRAPPIST x BRAINWAVE command line.
 
     python -m app.cli simulate          replay a full 402 flow offline
     python -m app.cli doctor            x402 conformance + ledger integrity
@@ -71,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.cli",
         description=(
-            "ERAYA x BRAINWAVE -- MCP won the tool layer. This is its payment layer. "
+            "TRAPPIST x BRAINWAVE -- MCP won the tool layer. This is its payment layer. "
             "Every command runs offline unless it says otherwise; nothing here deploys."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
