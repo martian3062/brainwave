@@ -39,12 +39,13 @@ The agent never sees an API key. The author never runs a billing system.
 
 ---
 
-## Deployment status: LIVE on Render (no on-chain settlement yet)
+## Deployment status: LIVE on Render, with a real settled transaction
 
-**Deployed and independently verified**: `/healthz` reports `mcp_session_manager: started`, and
-a real `mcp.ClientSession` driven against the live endpoint lists all 16 tools. **No on-chain
-transaction has been sent from this repository yet** — the facilitator path is configured and
-exercised in tests, but no real Base Sepolia settlement has happened.
+**Deployed and independently verified**: `/healthz` reports `mcp_session_manager: started`, a
+real `mcp.ClientSession` driven against the live endpoint lists all 16 tools, and a real buyer
+wallet has paid, settled and had its receipt independently verified end to end —
+[`0x2cb05c6ecf2b2a0cdaa8d227e5008d2782a939b37edf6f05d6d8ef36b73b1b7a`](https://sepolia.basescan.org/tx/0x2cb05c6ecf2b2a0cdaa8d227e5008d2782a939b37edf6f05d6d8ef36b73b1b7a)
+on Base Sepolia, via `python -m app.client call`.
 
 | Component | Location | Status |
 |---|---|---|
@@ -52,6 +53,7 @@ exercised in tests, but no real Base Sepolia settlement has happened.
 | Author dashboard | `https://eraya-brainwave.onrender.com/` | **LIVE** |
 | Ledger admin | `https://eraya-brainwave.onrender.com/admin/` | **LIVE** — password-protected |
 | `payTo` address | `0x29f8A51736884DfE765a8e352AE854AB02F101Ad` | **SET** — a fresh Base Sepolia address generated for this deploy; testnet only, holds no mainnet funds |
+| First real settlement | [`0x2cb05c6e…b73b1b7a`](https://sepolia.basescan.org/tx/0x2cb05c6ecf2b2a0cdaa8d227e5008d2782a939b37edf6f05d6d8ef36b73b1b7a) | **SETTLED** — `casper_chain_status`, $0.001, `python -m app.client verify` reports `structure: PASSED`, `digest: PASSED` |
 | Facilitator | `https://x402.org/facilitator` (public, testnet) · Coinbase CDP hosted (configured, not enabled) | Configured |
 | Network | `eip155:84532` (Base Sepolia) | Config default |
 | Demo video | `https://…` | Not yet recorded — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
@@ -796,16 +798,16 @@ credit.
 | Paid tool catalogue (`@paid()` over `create_payment_wrapper`) | ✅ **Built & shared with the tested core** | `app/gateway/paid.py` adapts the live catalogue onto `app/pay/decorator.py`; all seven paid tools are challenged |
 | Plain-HTTP paywall (`x402.http.middleware.fastapi`) | 🔨 **Optional seam, not yet written** | `app/main.py::_install_http_paywall`; paid MCP does not depend on it |
 | Buyer-side Guardian + paid MCP client | ✅ **Built** | `app/client/`; budgets, signer loading, receipt checks and over-capture alarms are tested |
-| Exact / `upto` settlement | ✅ **Built, not transacted live** | Safe default settles each call; payer, integer nonce, amount and hostile-facilitator mismatch cases are pinned |
-| Batch close + on-chain claim/sweep | ✅ **Wired, dry-run by default** | `app/cli/close_batch.py`; encrypted durable channel state, resumable two-step close and network confirmations; no live transaction sent |
-| Receipt issue + `/receipts/{id}/verify` | ✅ **Built** | One canonical `sha256:` body digest in live, demo and CLI paths; batch settlement re-hashes the body |
+| Exact / `upto` settlement | ✅ **Built and transacted live** | Payer, integer nonce, amount and hostile-facilitator mismatch cases are pinned; `exact` settled for real, below |
+| Batch close + on-chain claim/sweep | ✅ **Wired, dry-run by default** | `app/cli/close_batch.py`; encrypted durable channel state, resumable two-step close and network confirmations; not yet exercised live |
+| Receipt issue + `/receipts/{id}/verify` | ✅ **Built and independently verified** | One canonical `sha256:` body digest in live, demo and CLI paths; a real receipt's structure and digest both verify against the live gateway |
 | Simulation / conformance CLI | ✅ **Built** | `python -m app.cli simulate`; `doctor` is strictly read-only |
-| On-chain settlement on Base | ⛔ **Nothing sent** | No transaction has been made from this repository |
+| On-chain settlement on Base | ✅ **Real transaction, verified** | [`0x2cb05c6e…b73b1b7a`](https://sepolia.basescan.org/tx/0x2cb05c6ecf2b2a0cdaa8d227e5008d2782a939b37edf6f05d6d8ef36b73b1b7a) on Base Sepolia — a funded buyer wallet paid `casper_chain_status`, the facilitator settled it, and the receipt verified end to end |
 | Mainnet | ⛔ **Not enabled** | `eip155:8453` is one env var and changes no code path; the app warns if mainnet is configured outside production |
 
-**Nothing in this table is marked done because it is nearly done.** The local payment path is
-implemented and tested, but it is not claiming to have settled anything until a real Base
-Sepolia transaction is independently verifiable.
+**Nothing in this table is marked done because it is nearly done.** A real Base Sepolia
+settlement exists and is independently verifiable — link above — which is the bar this table
+has held itself to throughout.
 
 ---
 
@@ -872,7 +874,7 @@ The properties that matter, in priority order:
 ## Roadmap
 
 - [x] Finish the paid MCP catalogue, Guardian, batch close, receipts and conformance CLI
-- [ ] First real settlement on Base Sepolia, with the tx hash published in this README
+- [x] First real settlement on Base Sepolia, with the tx hash published in this README
 - [x] Simulation CLI — replay a full 402 flow offline, print the protocol trace and the realised
       fee load
 - [ ] Optional plain-HTTP paywall for non-MCP routes
