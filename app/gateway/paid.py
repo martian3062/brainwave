@@ -419,10 +419,11 @@ def _attach_receipt(result: Any, body: dict[str, Any]) -> Any:
     """Return the tool's result with the receipt attached, twice.
 
     In `_meta` under `eraya/receipt` for machine consumption, and folded into
-    the JSON body under `_payment` so a human reading the transcript can see
-    what they were charged without decoding protocol metadata. If the tool
-    returned something that is not a JSON object, the text is left exactly as
-    the tool wrote it and only `_meta` carries the receipt.
+    the JSON body under `_receipt` -- the key the README documents -- so a
+    human reading the transcript can see what they were charged without
+    decoding protocol metadata. If the tool returned something that is not a
+    JSON object, the text is left exactly as the tool wrote it and only
+    `_meta` carries the receipt.
     """
     from mcp.types import CallToolResult, TextContent
 
@@ -430,7 +431,7 @@ def _attach_receipt(result: Any, body: dict[str, Any]) -> Any:
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict):
-            parsed["_payment"] = body
+            parsed["_receipt"] = body
             text = json.dumps(parsed)
     except (ValueError, TypeError):
         pass

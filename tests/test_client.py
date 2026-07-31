@@ -605,6 +605,74 @@ def test_the_receipt_is_pulled_out_of_the_tool_response():
     assert result.verified, result.summary()
 
 
+def test_the_receipt_is_pulled_from_the_real_gateways_wire_shape():
+    """Regression test for a real bug, found against the live deployed gateway.
+
+    `FakeSession` above (and the test it feeds) shapes its response as a bare
+    `receipt` key in the body plus a top-level `amount` in the settlement --
+    which is NOT what `app/gateway/paid.py` / `app/pay/decorator.py` actually
+    produce. The real gateway folds the receipt into the body under
+    `_payment` and never sets `amount`; the receipt only reliably rides in
+    `payment_response.extra.receipt`. Against that real shape, the old
+    `_extract_receipt` returned `None` every time, which froze the Guardian
+    with "no receipt" after every single real settlement -- verified by
+    actually running `python -m app.client call` against the deployed gateway
+    on Base Sepolia. This test reproduces the real shape directly, no live
+    network involved.
+    """
+
+    class RealShapedSession:
+        def __init__(self) -> None:
+            self.payer = ""
+
+        async def call_tool(self, name, arguments=None, meta=None, **_kwargs):
+            payment = (meta or {}).get("x402/payment")
+            if payment is None:
+                return mcp_types.CallToolResult(
+                    content=[
+                        mcp_types.TextContent(
+                            type="text", text=json.dumps(payment_required_body(CENT))
+                        )
+                    ],
+                    structuredContent=payment_required_body(CENT),
+                    isError=True,
+                )
+            self.payer = payment["payload"]["authorization"]["from"]
+            receipt = receipt_body(authorized=CENT, captured=CENT, tx_hash="0xreal", payer=self.payer)
+            body = {"ok": True, "tool": name, "_payment": receipt}
+            return mcp_types.CallToolResult(
+                content=[mcp_types.TextContent(type="text", text=json.dumps(body))],
+                isError=False,
+                # No top-level `amount` -- the real SettleResponse does not
+                # carry one for this shape. Receipt only lives in `extra`.
+                _meta={
+                    "x402/payment-response": {
+                        "success": True,
+                        "transaction": "0xreal",
+                        "network": NETWORK,
+                        "payer": self.payer,
+                        "extra": {"receipt": receipt},
+                    }
+                },
+            )
+
+        async def list_tools(self):
+            return mcp_types.ListToolsResult(
+                tools=[
+                    mcp_types.Tool(name=TOOL, description="x", inputSchema={"type": "object"})
+                ]
+            )
+
+    session = RealShapedSession()
+    client = make_client(session, Guardian(policy()), make_signer())  # type: ignore[arg-type]
+    call = asyncio.run(client.call_tool(TOOL, {}))
+
+    assert call.receipt is not None, "receipt must be found in the real gateway's actual wire shape"
+    assert call.receipt["receiptId"] == "rcpt_test_0001"
+    assert call.captured_atomic == CENT, "must fall back to receipt.capturedAtomic, not freeze at 0"
+    assert not client.guardian.frozen, f"must not freeze when a real receipt is present: {client.guardian.frozen_reason}"
+
+
 def test_the_daily_journal_survives_a_restart(tmp_path):
     """A daily budget that resets when the process restarts is not a daily
     budget, it is a per-process budget."""

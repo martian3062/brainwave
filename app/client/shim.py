@@ -378,21 +378,34 @@ def _settle_amount(settle_response: Any) -> int | None:
 def _extract_receipt(result: Any) -> dict[str, Any] | None:
     """Find the receipt the gateway returned inside a successful tool response.
 
-    In practice the TEXT path is the one that fires: `x402MCPClient.call_tool`
-    returns an `MCPToolCallResult`, which carries only `content`, `is_error`,
-    `payment_response` and `payment_made` -- `structuredContent` does not
-    survive that hop. The structured branch is kept for callers that hand us a
-    result straight off the wire, and because it costs one `isinstance`.
+    Checked in the order it is actually populated on the wire, verified against
+    a real settled call:
+
+    1. `result.payment_response.extra.receipt` -- the SDK-native extension
+       point `app/pay/decorator.py`'s shared core writes on every settlement.
+       This is the one that reliably fires: `MCPToolCallResult` (from
+       `x402MCPClient.call_tool`) exposes only `content`, `is_error`,
+       `payment_made` and `payment_response` -- there is no
+       `structured_content` / `structuredContent` attribute on it at all, so
+       that branch below is dead for this client and kept only for a caller
+       that hands us a raw SDK result type instead.
+    2. The tool's own JSON body, under `_payment` -- `app/gateway/paid.py`
+       folds a second, human-readable copy in there. `_receipt` is also
+       accepted: that is the key the README documents, kept for whichever one
+       a future edit makes canonical.
 
     A receipt is recognised by carrying `receiptId`, the field
-    `app.models.Receipt` makes unique. Accepted either at the top level or
-    nested under a `receipt` key, because whether a tool returns a bare receipt
-    or wraps it beside its own output is the tool author's choice, not ours.
+    `app.models.Receipt` makes unique. Accepted at the top level or nested
+    under `receipt` / `_payment` / `_receipt`, because whether a tool returns a
+    bare receipt or wraps it beside its own output is the tool author's
+    choice, not ours.
     """
+    settlement_extra = getattr(getattr(result, "payment_response", None), "extra", None)
     structured = getattr(result, "structured_content", None) or getattr(
         result, "structuredContent", None
     )
     for candidate in (
+        settlement_extra,
         structured,
         *(_json_of(item) for item in (getattr(result, "content", None) or [])),
     ):
@@ -400,9 +413,10 @@ def _extract_receipt(result: Any) -> dict[str, Any] | None:
             continue
         if "receiptId" in candidate:
             return dict(candidate)
-        inner = candidate.get("receipt")
-        if isinstance(inner, Mapping) and "receiptId" in inner:
-            return dict(inner)
+        for key in ("receipt", "_payment", "_receipt"):
+            inner = candidate.get(key)
+            if isinstance(inner, Mapping) and "receiptId" in inner:
+                return dict(inner)
     return None
 
 
