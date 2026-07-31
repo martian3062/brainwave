@@ -829,6 +829,25 @@ def test_the_verifiers_canonical_form_agrees_with_the_seller_that_writes_the_has
     assert body_digest(body) == seller.body_digest(body)
 
 
+def test_digest_verifies_a_real_receipt_that_carries_an_informational_attestation():
+    """Regression test for a real bug found on the same live re-verification run
+    as the two above: `app.pay.receipts.build_body` hashes `attestation` as
+    just another field (it is informational text from the facilitator here,
+    not a detached signature), so `bodyHash` is computed WITH it included.
+    `verify_receipt` used to strip `attestation` before recomputing the
+    digest -- correct for BRAINWAVE's own separate self-attestation signing
+    scheme, wrong for this one -- so an untampered real receipt always failed
+    digest verification with "the body has been altered since it was issued".
+    """
+    receipt = receipt_body(authorized=CENT, captured=CENT, tx_hash="0xreal", payer="0xA")
+    receipt["attestation"] = '{"network": "eip155:84532", "payer": "0xA", "transaction": "0xreal"}'
+    receipt["bodyHash"] = body_digest({k: v for k, v in receipt.items() if k != "bodyHash"})
+
+    result = verify_receipt(receipt)
+    digest_check = next(c for c in result.checks if c.name == "digest")
+    assert digest_check.status == CheckStatus.PASSED, digest_check.detail
+
+
 def test_a_tampered_receipt_fails_the_digest():
     body = receipt_body(authorized=5 * CENT, captured=2 * CENT, tx_hash=None, payer="0xA")
     digest = body_digest(body)

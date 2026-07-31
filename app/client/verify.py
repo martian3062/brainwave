@@ -373,8 +373,20 @@ def verify_receipt(
     `receipt` is the receipt BODY -- the object the gateway hashed and returned
     inside the tool response, not a database row. Everything not supplied is
     reported SKIPPED rather than quietly assumed.
+
+    Two different bodies are needed here, not one -- conflating them is a bug
+    this project actually shipped, found by running a real settlement against
+    the live deployed gateway and watching an untampered receipt fail digest
+    verification. `app.pay.receipts.build_body` hashes `attestation` as just
+    another field, so `bodyHash` only ever excludes itself. BRAINWAVE's own
+    OPTIONAL self-attestation (`sign_attestation`) is different: there,
+    `attestation` is a signature *over* the rest of the body, so recovering
+    its signer needs the narrower form or the check is circular.
     """
-    body = {k: v for k, v in receipt.items() if k not in {"bodyHash", "attestation"}}
+    body_for_digest = {k: v for k, v in receipt.items() if k != "bodyHash"}
+    body_without_attestation = {
+        k: v for k, v in receipt.items() if k not in {"bodyHash", "attestation"}
+    }
     checks: list[Check] = []
     receipt_id = str(receipt.get("receiptId") or receipt.get("id") or "<unknown>")
 
@@ -416,7 +428,7 @@ def verify_receipt(
     supplied_hash = expected_body_hash or receipt.get("bodyHash")
     if not supplied_hash:
         checks.append(Check("digest", CheckStatus.SKIPPED, "no bodyHash to compare against"))
-    elif verify_body_hash(body, str(supplied_hash)):
+    elif verify_body_hash(body_for_digest, str(supplied_hash)):
         checks.append(Check("digest", CheckStatus.PASSED, f"sha256 matches {supplied_hash}"))
     else:
         checks.append(
@@ -425,7 +437,7 @@ def verify_receipt(
                 CheckStatus.FAILED,
                 "canonical sha256 does not match the receipt's bodyHash -- "
                 "the body has been altered since it was issued",
-                {"computed": body_digest(body), "claimed": str(supplied_hash)},
+                {"computed": body_digest(body_for_digest), "claimed": str(supplied_hash)},
             )
         )
 
@@ -434,7 +446,7 @@ def verify_receipt(
     if not attestation:
         checks.append(Check("attestation", CheckStatus.SKIPPED, "receipt carries no attestation"))
     elif not expected_attestor:
-        recovered = recover_attestation_signer(body, str(attestation))
+        recovered = recover_attestation_signer(body_without_attestation, str(attestation))
         checks.append(
             Check(
                 "attestation",
@@ -445,7 +457,7 @@ def verify_receipt(
             )
         )
     else:
-        recovered = recover_attestation_signer(body, str(attestation))
+        recovered = recover_attestation_signer(body_without_attestation, str(attestation))
         if recovered and recovered.lower() == expected_attestor.lower():
             checks.append(Check("attestation", CheckStatus.PASSED, f"signed by {recovered}"))
         else:
