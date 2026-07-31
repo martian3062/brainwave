@@ -14,6 +14,8 @@
 [![NiceGUI](https://img.shields.io/badge/UI-NiceGUI%20(pure%20Python)-1abc9c)](https://nicegui.io)
 [![No JS](https://img.shields.io/badge/Node%20%C2%B7%20npm%20%C2%B7%20TypeScript-none-lightgrey)](#why-this-stack)
 
+**Live: [https://eraya-brainwave.onrender.com](https://eraya-brainwave.onrender.com)**
+
 ---
 
 **The Model Context Protocol won the tool layer. It has no payment layer.**
