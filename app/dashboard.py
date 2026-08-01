@@ -27,15 +27,17 @@ log = logging.getLogger("brainwave.dashboard")
 
 # Brand palette. NiceGUI is styled in Python, so these are values passed to
 # ui.colors() and inline styles -- there is no stylesheet in this project.
-BG = "#1d0718"
-FG = "#fbf4f2"
-ACCENT = "#ff6f91"
-ACCENT_DEEP = "#e6416f"
-CREAM = "#fff3ec"
+BG = "#fbf8f4"
+FG = "#302a27"
+ACCENT = "#e88c69"
+ACCENT_DEEP = "#c96849"
+CREAM = FG
+SURFACE = "#ffffff"
+GRID = "#e8ded7"
 
 
 def apply_theme() -> None:
-    ui.colors(primary=ACCENT, secondary=ACCENT_DEEP, accent=ACCENT, dark=BG)
+    ui.colors(primary=ACCENT_DEEP, secondary=ACCENT, accent=ACCENT, dark=FG)
     ui.query("body").style(f"background-color:{BG}; color:{FG}")
 
 
@@ -44,7 +46,8 @@ def _stat(label: str, value: str, sub: str = "") -> None:
         ui.column()
         .classes("gap-0 p-4 rounded-lg")
         .style(
-            f"background:rgba(255,111,145,0.08); border:1px solid {ACCENT_DEEP}33; min-width:190px"
+            f"background:{SURFACE}; border:1px solid {GRID}; min-width:190px;"
+            "box-shadow:0 8px 24px rgba(73,55,45,0.07)"
         )
     ):
         ui.label(label).style(f"color:{ACCENT}; font-size:0.72rem; letter-spacing:0.12em").classes(

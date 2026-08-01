@@ -114,14 +114,14 @@ def _controls(state: dict, prices: dict[int, str], fees: dict[int, str], demo, r
             value=state["price"],
             label="price per call",
             on_change=lambda e: (state.update(price=int(e.value)), refresh()),
-        ).props("dense outlined dark").style("min-width:16rem")
+        ).props("dense outlined").style("min-width:16rem")
 
         ui.select(
             options=fees,
             value=state["fee"],
             label="facilitator fee per settlement",
             on_change=lambda e: (state.update(fee=int(e.value)), refresh()),
-        ).props("dense outlined dark").style("min-width:16rem")
+        ).props("dense outlined").style("min-width:16rem")
 
         with ui.column().classes("gap-0").style("min-width:16rem"):
             ui.label("calls per batch (x-axis maximum)").style(
@@ -133,14 +133,14 @@ def _controls(state: dict, prices: dict[int, str], fees: dict[int, str], demo, r
                 step=10,
                 value=state["max_n"],
                 on_change=lambda e: (state.update(max_n=int(e.value)), refresh()),
-            ).props("label-always dark").style(f"color:{t.ACCENT}")
+            ).props("label-always").style(f"color:{t.ACCENT_DEEP}")
 
         if demo.present:
             ui.switch(
                 "exclude demo data",
                 value=state["exclude_demo"],
                 on_change=lambda e: (state.update(exclude_demo=bool(e.value)), refresh()),
-            ).props("dense dark").style(f"color:{t.WARN_INK}").tooltip(
+            ).props("dense").style(f"color:{t.WARN_INK}").tooltip(
                 "Scopes the ledger overlay only. The model curves are computed from "
                 "the price and fee above and are unaffected."
             )

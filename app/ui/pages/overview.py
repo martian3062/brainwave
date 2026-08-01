@@ -66,7 +66,7 @@ def _filter_row(state: dict, demo, refresh) -> None:
                 label="window",
                 on_change=lambda e: (state.update(days=int(e.value)), refresh()),
             )
-            .props("dense outlined dark")
+            .props("dense outlined")
             .style("min-width:11rem")
         )
         window.tooltip("Scopes both time-series charts below.")
@@ -76,7 +76,7 @@ def _filter_row(state: dict, demo, refresh) -> None:
                 "exclude demo data",
                 value=state["exclude_demo"],
                 on_change=lambda e: (state.update(exclude_demo=bool(e.value)), refresh()),
-            ).props("dense dark").style(f"color:{t.WARN_INK}")
+            ).props("dense").style(f"color:{t.WARN_INK}")
         ui.space()
         ui.label(
             f"settlement: {'batched' if settings.batching_enabled else 'per call'} - "

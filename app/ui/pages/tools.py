@@ -55,13 +55,13 @@ def _filter_row(state: dict, demo, refresh) -> None:
             "enabled tools only",
             value=state["enabled_only"],
             on_change=lambda e: (state.update(enabled_only=bool(e.value)), refresh()),
-        ).props("dense dark")
+        ).props("dense")
         if demo.present:
             ui.switch(
                 "exclude demo data",
                 value=state["exclude_demo"],
                 on_change=lambda e: (state.update(exclude_demo=bool(e.value)), refresh()),
-            ).props("dense dark").style(f"color:{t.WARN_INK}")
+            ).props("dense").style(f"color:{t.WARN_INK}")
         ui.space()
         ui.label(f"platform take {settings.platform_take_bps / 100:.1f}% by default").style(
             f"color:{t.INK_MUTED}; font-size:0.75rem"

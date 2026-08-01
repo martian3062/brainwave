@@ -638,12 +638,11 @@ def test_stacked_segments_are_separated_by_a_surface_gap_not_a_stroke():
     assert "borderColor" not in plain["itemStyle"]
 
 
-def test_series_palette_is_the_validated_one():
-    """These three hexes are not a taste decision -- they are the output of the
-    palette validator against this surface. Changing one silently would undo a
-    colourblind-safety guarantee, so pin them."""
-    assert theme.SERIES == ("#e6416f", "#2299ee", "#c08a1e")
-    assert theme.BG == "#1d0718"
+def test_series_palette_is_the_fixed_light_one():
+    """The light chart palette stays fixed and distinct from page chrome."""
+    assert theme.SERIES == ("#c96849", "#2f718c", "#9a6a2f")
+    assert theme.BG == "#fbf8f4"
+    assert theme.SURFACE == "#ffffff"
     # The de-emphasis grey is deliberately NOT a categorical slot.
     assert theme.DE_EMPHASIS not in theme.SERIES
 

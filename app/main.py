@@ -314,7 +314,7 @@ ui.run_with(
     app,
     title=settings.app_name,
     favicon="\N{ELECTRIC PLUG}",
-    dark=True,
+    dark=False,
     storage_secret=settings.storage_secret,
     # Render supports websockets; NiceGUI needs them for its reactive updates.
     reconnect_timeout=5.0,

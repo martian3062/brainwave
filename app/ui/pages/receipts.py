@@ -72,7 +72,7 @@ def _filter_row(state: dict, demo, refresh) -> None:
             value=state["session"] or ANY,
             label="session",
             on_change=lambda e: _set("session", e.value),
-        ).props("dense outlined dark").style("min-width:16rem").tooltip(
+        ).props("dense outlined").style("min-width:16rem").tooltip(
             "Only sessions that actually have receipts are offered."
         )
 
@@ -81,7 +81,7 @@ def _filter_row(state: dict, demo, refresh) -> None:
             value=state["batch"] or ANY,
             label="batch",
             on_change=lambda e: _set("batch", e.value),
-        ).props("dense outlined dark").style("min-width:16rem").tooltip(
+        ).props("dense outlined").style("min-width:16rem").tooltip(
             "Filter to one on-chain settlement. The captured column then sums to "
             "what that transaction moved."
         )
@@ -91,20 +91,20 @@ def _filter_row(state: dict, demo, refresh) -> None:
             placeholder="receipt id, tx hash, payer, resource",
             value=state["search"],
             on_change=lambda e: (state.update(search=e.value or ""), refresh()),
-        ).props('dense outlined dark clearable debounce="400"').style("min-width:18rem")
+        ).props('dense outlined clearable debounce="400"').style("min-width:18rem")
 
         ui.switch(
             "settled only",
             value=state["settled_only"],
             on_change=lambda e: (state.update(settled_only=bool(e.value)), refresh()),
-        ).props("dense dark").tooltip("Receipts that carry a transaction hash.")
+        ).props("dense").tooltip("Receipts that carry a transaction hash.")
 
         if demo.present:
             ui.switch(
                 "exclude demo data",
                 value=state["exclude_demo"],
                 on_change=lambda e: (state.update(exclude_demo=bool(e.value)), refresh()),
-            ).props("dense dark").style(f"color:{t.WARN_INK}")
+            ).props("dense").style(f"color:{t.WARN_INK}")
 
 
 def _body(state: dict, demo) -> None:
@@ -313,7 +313,7 @@ def _detail(r: q.ReceiptRow, dialog) -> None:
         ui.space()
         if r.is_demo:
             t.demo_badge()
-        ui.button(icon="close", on_click=dialog.close).props("flat round dense dark")
+        ui.button(icon="close", on_click=dialog.close).props("flat round dense")
 
     ui.separator().style(f"background:{t.GRID}")
 
@@ -379,7 +379,7 @@ def _detail(r: q.ReceiptRow, dialog) -> None:
                 "Open on the block explorer",
                 icon="open_in_new",
                 on_click=lambda: ui.navigate.to(r.explorer_url, new_tab=True),
-            ).props("outline dark").style(f"color:{t.ACCENT}")
+            ).props("outline").style(f"color:{t.ACCENT_DEEP}")
             ui.label(r.tx_hash or "").style(
                 f"color:{t.INK_MUTED}; font-size:0.72rem; font-family:monospace"
             )

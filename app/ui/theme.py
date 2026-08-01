@@ -1,53 +1,13 @@
-"""Palette, page shell, and chart defaults. Pure Python -- no HTML, CSS, JS or npm.
+"""Palette, page shell, and chart defaults. Pure Python -- no JS or npm.
 
-NiceGUI is styled in Python: everything below is either a `.style()` string built
-here, a Tailwind class handed to `.classes()`, or a plain dict fed to ECharts.
-There is no stylesheet anywhere in this repository and there is no place to put
-one.
+The dashboard intentionally uses a quiet light system: milky-white page chrome,
+white data surfaces, restrained peach accents, and dark warm-grey text. Peach is
+reserved for navigation, focus, and the primary data series so it remains useful
+instead of becoming visual noise.
 
-================================================================================
-COLOUR -- CHOSEN BY VALIDATOR, NOT BY EYE
-================================================================================
-
-The brand palette (bg #1d0718, fg #fbf4f2, accent #ff6f91, deep #e6416f, cream
-#fff3ec) is a single warm hue family. That is right for chrome and wrong for
-series identity: three pinks are three pinks under deuteranopia. So the chrome
-keeps the brand values verbatim, and the *data* colours were derived by running
-the palette validator against this surface (#1d0718, dark mode) and searching for
-steps that clear every check, rather than by picking something that looked nice.
-
-Categorical slots (identity: which series), assigned in FIXED order, never cycled:
-
-    slot 1  #e6416f   the brand deep accent -- kept, it passes on its own merits
-    slot 2  #2299ee
-    slot 3  #c08a1e
-
-    Lightness band     PASS  all 3 inside OKLCH L 0.48-0.67 (dark band)
-    Chroma floor       PASS  all 3 >= 0.10
-    CVD separation     PASS  worst adjacent  #2299ee vs #e6416f  dE 20.5 (deutan)
-                             worst all-pairs #c08a1e vs #e6416f  dE  9.1 (deutan)
-    Normal-vision      PASS  worst adjacent dE 28.9 / worst all-pairs dE 20.4
-    Contrast v surface PASS  all 3 >= 3:1
-
-All-pairs is reported because the economics page plots a scatter, where any two
-marks can end up adjacent. Three slots is also the cap: no ordering of eight
-colours passes all-pairs, so a fourth series folds into "other" or gets its own
-chart.
-
-Ordinal ramp (position in a sequence -- the call-outcome funnel), one hue,
-monotone lightness:
-
-    #8a2746  #b0305a  #d13c6a  #ef5b80  #ffa6bd
-    monotone PASS - adjacent dL >= 0.06 PASS - light-end 2.24:1 PASS - hue spread 5 deg
-
-DE_EMPHASIS (#8f7f88) is deliberately grey and deliberately below the chroma
-floor: it is not a categorical slot. It carries the series we are arguing
-*against* (per-call settlement) using the emphasis pattern -- highlight one, grey
-the rest -- and is always direct-labelled, so it never relies on hue to be read.
-
-Status inks are text-plus-icon only, never a chart series, so a status colour can
-never impersonate an identity slot. Each clears WCAG text contrast on the
-surface: good 8.63:1, warn 9.80:1, bad 8.45:1.
+Categorical chart colours are fixed in order and deliberately separate warm,
+blue, and ochre hues. The ordinal ramp stays monotone from dark to light. Status
+colours are used only with text and icons, never as categorical chart slots.
 
 ================================================================================
 NUMBERS
@@ -121,85 +81,70 @@ __all__ = [
 ]
 
 # --------------------------------------------------------------------------
-# Brand chrome, verbatim.
+# Light dashboard chrome.
 # --------------------------------------------------------------------------
-BG = "#1d0718"  # page surface
-FG = "#fbf4f2"  # primary ink
-ACCENT = "#ff6f91"  # eyebrows, links, focus
-ACCENT_DEEP = "#e6416f"  # also categorical slot 1
-CREAM = "#fff3ec"  # headings and figures
+BG = "#fbf8f4"  # milky page surface
+FG = "#302a27"  # primary ink
+INK = FG
+INK_2 = "#625a55"  # secondary text
+INK_MUTED = "#817873"  # axis ticks and captions
 
-# Derived chrome. One step off the surface each, so they recede.
-SURFACE = "#2a1122"  # card fill                     (1.10:1 vs BG -- recessive)
-SURFACE_HI = "#341829"  # hovered / nested fill
-GRID = "#3a2130"  # hairline gridlines and axes   (1.31:1 vs BG -- recessive)
+SURFACE = "#ffffff"  # cards and charts
+SURFACE_HI = "#fff6f0"  # selected and nested surfaces
+GRID = "#e8ded7"  # axes and hairlines
 
-INK = FG  # primary text     17.6:1
-INK_2 = "#b9a7b1"  # secondary text    8.4:1
-INK_MUTED = "#8f7f88"  # axis ticks, captions  5.1:1
+ACCENT = "#e88c69"  # peach focus and eyebrow
+ACCENT_DEEP = "#c96849"  # primary action and chart slot 1
+PEACH = "#f3b596"
+PEACH_SOFT = "#fce7da"
+CREAM = FG  # legacy name used by headings and figures
+GLASS_BORDER = "rgba(89,71,61,0.12)"
 
-# --------------------------------------------------------------------------
-# Retro-peach glass chrome -- layered OVER the chrome above, for surfaces and
-# backgrounds only. Never used for SERIES/ORDINAL/status ink: those three keep
-# the validator report from the module docstring untouched. This section is
-# purely decorative (page background, card fills, nav), so it carries none of
-# that report's constraints.
-# --------------------------------------------------------------------------
-PEACH = "#ffb27a"  # warm mid-tone, bridges ACCENT to CREAM
-PEACH_SOFT = "#ffd9b3"  # pale peach, gradient terminus
-GLASS_BORDER = "rgba(255,243,236,0.14)"  # CREAM hairline, low alpha
-
-#: The retro-sunset backdrop: BG -> deep accent -> accent -> peach -> soft
-#: peach, the classic dark-to-warm synthwave ramp. Animated in `apply_theme`.
-RETRO_GRADIENT = (
-    f"linear-gradient(120deg, {BG} 0%, {ACCENT_DEEP} 32%, {ACCENT} 55%, "
-    f"{PEACH} 78%, {PEACH_SOFT} 100%)"
-)
+PAGE_GRADIENT = f"linear-gradient(180deg, #fffdf9 0%, {BG} 72%, #fff3ea 100%)"
 
 # --------------------------------------------------------------------------
-# Data colour. See the module docstring for the validator report.
+# Data colour. Fixed tokens keep series identity consistent across every page.
 # --------------------------------------------------------------------------
 #: Categorical identity, fixed order, never cycled. Three is the cap here.
-SERIES = ("#e6416f", "#2299ee", "#c08a1e")
+SERIES = (ACCENT_DEEP, "#2f718c", "#9a6a2f")
 
 #: Ordinal, one hue, dark -> light. Position in a sequence, not identity.
-ORDINAL = ("#8a2746", "#b0305a", "#d13c6a", "#ef5b80", "#ffa6bd")
+ORDINAL = ("#9f432d", "#bc583b", "#d87555", "#e99c80", "#f3c3b0")
 
 #: Not a slot. The greyed-out comparison series in the emphasis pattern.
-DE_EMPHASIS = "#8f7f88"
+DE_EMPHASIS = "#9a928d"
 
 #: Status. Text + icon + label only. Never a series.
-OK_INK = "#5cc27a"
-WARN_INK = "#e8b04b"
-BAD_INK = "#ff8a8a"
+OK_INK = "#2f7a55"
+WARN_INK = "#996515"
+BAD_INK = "#b54845"
 
 _TONES = {"default": CREAM, "ok": OK_INK, "warn": WARN_INK, "bad": BAD_INK, "accent": ACCENT}
 
 
 def alpha(hex_color: str, a: float) -> str:
-    """`'#e6416f', 0.10 -> 'rgba(230,65,111,0.1)'`. Area fills are washes."""
+    """`'#c96849', 0.10 -> 'rgba(201,104,73,0.1)'`. Area fills are washes."""
     h = hex_color.lstrip("#")
     r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
     return f"rgba({r},{g},{b},{a})"
 
 
-def glass(tint: str = CREAM, opacity: float = 0.08, *, blur: int = 18, glow: str = "") -> str:
-    """Frosted-glass panel: translucent tint, blurred backdrop, hairline border,
-    soft shadow -- meant to sit over `RETRO_GRADIENT`, not a flat surface.
+def glass(tint: str = SURFACE, opacity: float = 0.08, *, blur: int = 18, glow: str = "") -> str:
+    """Return the shared clean panel style.
 
-    `glow` is an optional extra colour for a soft outer glow (the retro neon
-    touch); pass a brand colour for hero surfaces, leave empty for ordinary
-    cards so the effect stays subtle rather than novelty.
+    The name is retained for the public theme API, but panels are now opaque and
+    calm instead of frosted. Non-default tints become a very light wash.
     """
-    shadow = "0 8px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)"
-    if glow:
-        shadow = f"0 0 40px {alpha(glow, 0.18)}, {shadow}"
-    return (
-        f"background:{alpha(tint, opacity)};"
-        f"backdrop-filter:blur({blur}px);-webkit-backdrop-filter:blur({blur}px);"
-        f"border:1px solid {GLASS_BORDER};"
-        f"box-shadow:{shadow};"
+    del blur
+    fill = (
+        SURFACE
+        if tint == SURFACE
+        else f"linear-gradient({alpha(tint, opacity)}, {alpha(tint, opacity)}), {SURFACE}"
     )
+    shadow = "0 8px 24px rgba(73,55,45,0.07)"
+    if glow:
+        shadow = f"0 0 0 3px {alpha(glow, 0.06)}, {shadow}"
+    return f"background:{fill};border:1px solid {GLASS_BORDER};box-shadow:{shadow};"
 
 
 # --------------------------------------------------------------------------
@@ -276,101 +221,39 @@ NAV: tuple[tuple[str, str, str], ...] = (
 )
 
 
-_RETRO_CSS = f"""
+_LIGHT_CSS = f"""
 <style>
-@keyframes retro-shift {{
-    0%   {{ background-position: 0% 50%; }}
-    50%  {{ background-position: 100% 50%; }}
-    100% {{ background-position: 0% 50%; }}
+.soft-page-bg {{
+    background: {PAGE_GRADIENT};
+    background-attachment: fixed;
 }}
-.retro-gradient-bg {{
-    background: linear-gradient(120deg, {BG}, {ACCENT_DEEP}, {ACCENT}, {PEACH}, {PEACH_SOFT}, {ACCENT}, {ACCENT_DEEP});
-    background-size: 400% 400%;
-    animation: retro-shift 24s ease-in-out infinite;
+.q-field__native, .q-field__input, .q-field__label {{
+    color: {INK};
 }}
-@keyframes boot-fade {{
-    0%, 82% {{ opacity: 1; visibility: visible; }}
-    100%    {{ opacity: 0; visibility: hidden; }}
+.q-field--outlined .q-field__control::before {{
+    border-color: {GRID};
 }}
-@keyframes boot-line-in {{
-    from {{ opacity: 0; transform: translateY(3px); }}
-    to   {{ opacity: 1; transform: translateY(0); }}
-}}
-@keyframes boot-cursor-blink {{
-    0%, 100% {{ opacity: 1; }}
-    50%      {{ opacity: 0; }}
-}}
-.boot-overlay {{
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 3rem 4rem;
-    background: {BG};
-    pointer-events: none;
-    animation: boot-fade 3.4s ease-in forwards;
-}}
-.boot-line {{
-    opacity: 0;
-    font-family: monospace;
-    font-size: 0.95rem;
-    animation: boot-line-in 0.35s ease-out forwards;
-}}
-.boot-cursor {{
-    font-family: monospace;
-    font-size: 0.95rem;
-    animation: boot-cursor-blink 1s step-start infinite;
+.q-menu, .q-card, .q-dialog__inner > div {{
+    color: {INK};
 }}
 </style>
 """
 
 
 def apply_theme() -> None:
-    ui.colors(primary=ACCENT, secondary=ACCENT_DEEP, accent=ACCENT, dark=BG)
-    # The only <style> tag in the project: a keyframe animation, which NiceGUI's
-    # inline .style()/.classes() API has no way to express. Still pure Python --
-    # generated from the palette constants above, not a separate stylesheet file.
-    ui.add_head_html(_RETRO_CSS)
+    ui.colors(primary=ACCENT_DEEP, secondary=PEACH, accent=ACCENT, dark=INK)
+    ui.add_head_html(_LIGHT_CSS)
     ui.query("body").style(f"background-color:{BG}; color:{INK}")
-    # Quasar paints its own surface behind the page; match it or cards float on grey.
     ui.query(".nicegui-content").style("padding:0")
 
 
-def _boot_overlay() -> None:
-    """A retro terminal boot sequence, played once on landing at `/`.
-
-    Pure CSS -- there is no JavaScript anywhere in this project. The overlay
-    fades itself out via `boot-fade` and carries `pointer-events:none` for its
-    entire life, so a click during the sequence still reaches the dashboard
-    underneath rather than waiting on the animation.
-    """
-    lines = (
-        ("$ trappist-brainwave --boot", ACCENT),
-        (f"> x402 v2 - {settings.x402_network} - {settings.x402_asset_symbol}", INK_2),
-        (f"> facilitator: {settings.facilitator_label} ... ok", INK_2),
-        ("> ledger: connected", INK_2),
-        ("> mcp session manager: started", INK_2),
-    )
-    with ui.column().classes("boot-overlay gap-1"):
-        for i, (line, colour) in enumerate(lines):
-            ui.label(line).classes("boot-line").style(
-                f"color:{colour}; animation-delay:{0.15 + i * 0.22}s"
-            )
-        with ui.row().classes("items-baseline gap-0"):
-            ui.label("> loading dashboard").classes("boot-line").style(
-                f"color:{PEACH}; animation-delay:{0.15 + len(lines) * 0.22}s"
-            )
-            ui.label("_").classes("boot-cursor").style(f"color:{PEACH}")
-
-
 def _aside(active: str):
-    """The nav 'aside' -- a transparent glass drawer over the retro gradient.
-
-    Returns the drawer so `_nav_bar` can wire a toggle button to it.
-    """
-    drawer = ui.left_drawer(value=True).classes("gap-1 p-3").style(glass(CREAM, 0.05, blur=22))
+    """Return the quiet navigation drawer used by every dashboard page."""
+    drawer = (
+        ui.left_drawer()
+        .classes("gap-1 p-3")
+        .style(f"background:{SURFACE_HI}; border-right:1px solid {GRID}; box-shadow:none")
+    )
     with drawer:
         with ui.row().classes("items-center gap-2 px-1 pb-3"):
             ui.icon("bolt").style(f"color:{ACCENT}; font-size:1.3rem")
@@ -381,9 +264,8 @@ def _aside(active: str):
                 ui.link(target=path)
                 .classes("no-underline w-full px-3 py-2 rounded-lg flex items-center gap-3")
                 .style(
-                    f"background:{alpha(ACCENT_DEEP, 0.22) if on else 'transparent'};"
-                    f"color:{CREAM if on else INK_2};"
-                    + (f"box-shadow:0 0 20px {alpha(ACCENT, 0.15)};" if on else "")
+                    f"background:{alpha(ACCENT, 0.16) if on else 'transparent'};"
+                    f"color:{ACCENT_DEEP if on else INK_2};" + ("font-weight:600;" if on else "")
                 )
             ):
                 ui.icon(icon).style("font-size:1.1rem")
@@ -395,7 +277,10 @@ def _nav_bar(drawer) -> None:
     with (
         ui.row()
         .classes("w-full items-center gap-4 px-6 py-4 sticky top-0 z-10")
-        .style(glass(CREAM, 0.06, blur=20, glow=ACCENT))
+        .style(
+            f"background:rgba(255,255,255,0.96); border-bottom:1px solid {GRID};"
+            "box-shadow:0 4px 16px rgba(73,55,45,0.05)"
+        )
     ):
         ui.button(icon="menu", on_click=drawer.toggle).props("flat round dense").style(
             f"color:{CREAM}"
@@ -424,12 +309,8 @@ def _pill(text: str, tone: str = "default") -> None:
 def page_shell(active: str, title: str, subtitle: str = "") -> Iterator[None]:
     """Aside, nav bar, page heading, and a max-width body column. Used by every page."""
     apply_theme()
-    if active == "/":
-        # Only on the landing page -- replaying a boot animation on every nav
-        # click between Tools/Receipts/Economics would be noise, not delight.
-        _boot_overlay()
     drawer = _aside(active)
-    with ui.column().classes("w-full min-h-screen gap-0 retro-gradient-bg"):
+    with ui.column().classes("w-full min-h-screen gap-0 soft-page-bg"):
         _nav_bar(drawer)
         with ui.column().classes("w-full max-w-[1400px] mx-auto px-6 py-6 gap-5"):
             with ui.column().classes("gap-1"):
@@ -464,7 +345,7 @@ def _footer() -> None:
 
 @contextmanager
 def card(title: str = "", subtitle: str = "") -> Iterator[None]:
-    with ui.column().classes("w-full gap-3 p-5 rounded-xl").style(glass(CREAM, 0.05)):
+    with ui.column().classes("w-full gap-3 p-5 rounded-xl").style(glass()):
         if title:
             with ui.column().classes("gap-0"):
                 ui.label(title).style(f"color:{CREAM}; font-size:1rem; font-weight:600")
@@ -496,7 +377,10 @@ def stat(label: str, value: str, sub: str = "", tone: str = "default", icon: str
     with (
         ui.column()
         .classes("gap-1 p-4 rounded-xl flex-1")
-        .style(glass(_TONES.get(tone, CREAM), 0.06, blur=14) + "min-width:180px")
+        .style(
+            glass(SURFACE if tone == "default" else _TONES.get(tone, SURFACE), 0.07)
+            + "min-width:180px"
+        )
     ):
         ui.label(label).classes("uppercase").style(
             f"color:{INK_MUTED}; font-size:0.66rem; letter-spacing:0.12em"
@@ -532,10 +416,7 @@ def note(text: str, tone: str = "default", icon: str = "info") -> None:
     with (
         ui.row()
         .classes("items-start gap-2 p-3 rounded-lg w-full")
-        .style(
-            f"background:{alpha(colour, 0.10)}; border:1px solid {alpha(colour, 0.25)};"
-            "backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);"
-        )
+        .style(f"background:{alpha(colour, 0.10)}; border:1px solid {alpha(colour, 0.25)};")
     ):
         ui.icon(icon).style(f"color:{colour}; font-size:1rem; margin-top:1px")
         ui.label(text).style(f"color:{INK}; font-size:0.8rem; max-width:90ch")
@@ -712,8 +593,8 @@ def axis_value(
         axis["axisLabel"] = {**axis["axisLabel"], "formatter": formatter}
     if name:
         axis["name"] = name
-        axis["nameLocation"] = "end"
-        axis["nameGap"] = 12
+        axis["nameLocation"] = "middle"
+        axis["nameGap"] = 36
     if max_ is not None:
         axis["max"] = max_
     return axis
@@ -877,5 +758,5 @@ def data_table(
         f"background:{SURFACE}; color:{INK}; font-variant-numeric:tabular-nums;"
         f"border:1px solid {GRID}"
     )
-    table.props("flat dense bordered dark")
+    table.props("flat dense bordered")
     return table
